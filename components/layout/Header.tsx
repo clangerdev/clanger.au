@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, X, User } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Menu, X, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { createClient } from "@/supabase/client";
 import logo from "@/assets/clanger-logo.png";
 
 const navLinks = [
@@ -14,13 +16,17 @@ const navLinks = [
   { name: "How It Works", href: "/how-it-works" },
 ];
 
-interface HeaderProps {
-  isAuthenticated?: boolean;
-}
-
-export function Header({ isAuthenticated = false }: HeaderProps) {
+export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading } = useAuth();
+
+  const handleLogout = async () => {
+    await createClient().auth.signOut();
+    router.push("/");
+    router.refresh();
+  };
 
   const isActive = (path: string) => pathname === path;
 
@@ -59,12 +65,18 @@ export function Header({ isAuthenticated = false }: HeaderProps) {
 
         {/* Desktop Auth/User */}
         <div className="hidden md:flex items-center gap-4">
-          {isAuthenticated ? (
-            <Link href="/profile">
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <User className="h-5 w-5" />
+          {!loading && user ? (
+            <>
+              <Link href="/profile">
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
+              <Button variant="ghost" onClick={handleLogout}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
               </Button>
-            </Link>
+            </>
           ) : (
             <>
               <Link href="/auth/signin">
@@ -107,7 +119,7 @@ export function Header({ isAuthenticated = false }: HeaderProps) {
               </Link>
             ))}
             <div className="pt-4 border-t border-border space-y-2">
-              {isAuthenticated ? (
+              {!loading && user ? (
                 <>
                   <Link
                     href="/profile"
@@ -117,6 +129,17 @@ export function Header({ isAuthenticated = false }: HeaderProps) {
                       Profile
                     </Button>
                   </Link>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </Button>
                 </>
               ) : (
                 <>

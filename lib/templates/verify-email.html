@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verify Your Email - Clanger</title>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont,
+        'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #f5f6f8;
+      line-height: 1.6;
+    "
+  >
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background-color: #f5f6f8; padding: 40px 20px"
+    >
+      <tr>
+        <td align="center">
+          <table
+            role="presentation"
+            width="600"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="
+              max-width: 600px;
+              width: 100%;
+              background-color: #ffffff;
+              border-radius: 12px;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+              overflow: hidden;
+            "
+          >
+            <!-- Header with gradient background -->
+            <tr>
+              <td
+                style="
+                  background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+                  padding: 40px 40px 30px;
+                  text-align: center;
+                "
+              >
+                <h1
+                  style="
+                    margin: 0;
+                    font-family: 'Space Grotesk', -apple-system,
+                      BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    font-size: 32px;
+                    font-weight: 700;
+                    color: #ffffff;
+                    letter-spacing: -0.5px;
+                  "
+                >
+                  CLANGER
+                </h1>
+              </td>
+            </tr>
+
+            <!-- Main content -->
+            <tr>
+              <td style="padding: 40px 40px 30px">
+                <h2
+                  style="
+                    margin: 0 0 20px;
+                    font-family: 'Space Grotesk', -apple-system,
+                      BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    font-size: 28px;
+                    font-weight: 700;
+                    color: #1a1a1a;
+                    letter-spacing: -0.3px;
+                  "
+                >
+                  Verify Your Email Address
+                </h2>
+
+                <p style="margin: 0 0 20px; font-size: 16px; color: #4a4a4a">
+                  Thanks for signing up for Clanger! To complete your
+                  registration and start playing fantasy sports, please verify
+                  your email address by clicking the button below.
+                </p>
+
+                <!-- CTA Button -->
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  style="margin: 30px 0"
+                >
+                  <tr>
+                    <td align="center">
+                      <a
+                        href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email"
+                        style="
+                          display: inline-block;
+                          padding: 14px 32px;
+                          background-color: #ff6b35;
+                          color: #ffffff;
+                          text-decoration: none;
+                          border-radius: 8px;
+                          font-weight: 600;
+                          font-size: 16px;
+                          box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+                          transition: background-color 0.2s;
+                        "
+                      >
+                        Verify Email Address
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin: 20px 0 0; font-size: 14px; color: #737373">
+                  If the button doesn't work, you can copy and paste this link
+                  into your browser:
+                </p>
+                <p
+                  style="
+                    margin: 10px 0 0;
+                    font-size: 14px;
+                    color: #ff6b35;
+                    word-break: break-all;
+                  "
+                >
+                  <a
+                    href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email"
+                    style="color: #ff6b35; text-decoration: underline"
+                    >{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash
+                    }}&type=email</a
+                  >
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td
+                style="
+                  padding: 30px 40px 40px;
+                  background-color: #fafafa;
+                  border-top: 1px solid #e5e5e5;
+                "
+              >
+                <p
+                  style="
+                    margin: 0 0 15px;
+                    font-size: 14px;
+                    color: #737373;
+                    text-align: center;
+                  "
+                >
+                  This verification link will expire in 24 hours for security
+                  reasons.
+                </p>
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 14px;
+                    color: #737373;
+                    text-align: center;
+                  "
+                >
+                  If you didn't create an account with Clanger, you can safely
+                  ignore this email.
+                </p>
+
+                <!-- Divider -->
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  style="margin: 30px 0 20px"
+                >
+                  <tr>
+                    <td style="border-top: 1px solid #e5e5e5"></td>
+                  </tr>
+                </table>
+
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 12px;
+                    color: #999999;
+                    text-align: center;
+                  "
+                >
+                  &copy; 2024 Clanger. All rights reserved.<br />
+                  Fantasy Sports Redefined
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

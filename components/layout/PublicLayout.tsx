@@ -1,19 +1,20 @@
-import { ReactNode } from 'react';
-import { Header } from './Header';
-import Footer from '@/components/landing/Footer';
+import { ReactNode } from "react";
+import { Header } from "./Header";
+import Footer from "@/components/landing/Footer";
 
 interface PublicLayoutProps {
   children: ReactNode;
   showFooter?: boolean;
 }
 
-export function PublicLayout({ children, showFooter = true }: PublicLayoutProps) {
+export function PublicLayout({
+  children,
+  showFooter = true,
+}: PublicLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col">
-      <Header isAuthenticated={false} />
-      <main className="flex-1">
-        {children}
-      </main>
+      <Header />
+      <main className="flex-1">{children}</main>
       {showFooter && <Footer />}
     </div>
   );
