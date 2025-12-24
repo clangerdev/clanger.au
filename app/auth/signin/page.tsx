@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, Suspense } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,11 +10,13 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/supabase/client";
 import clangerLogo from "@/assets/clanger-logo.png";
 
-export default function SignInPage() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | undefined>();
-  const [successMessage, setSuccessMessage] = useState<string | undefined>();
-  const [isPending, startTransition] = useTransition();
+function SearchParamsHandler({
+  setError,
+  setSuccessMessage,
+}: {
+  setError: (error: string | undefined) => void;
+  setSuccessMessage: (message: string | undefined) => void;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -40,7 +42,17 @@ export default function SignInPage() {
       // Clean up URL
       router.replace("/auth/signin", { scroll: false });
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, setError, setSuccessMessage]);
+
+  return null;
+}
+
+export default function SignInPage() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | undefined>();
+  const [successMessage, setSuccessMessage] = useState<string | undefined>();
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -70,6 +82,12 @@ export default function SignInPage() {
 
   return (
     <PublicLayout showFooter={false}>
+      <Suspense fallback={null}>
+        <SearchParamsHandler
+          setError={setError}
+          setSuccessMessage={setSuccessMessage}
+        />
+      </Suspense>
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4">
         <div className="w-full max-w-sm space-y-8">
           {/* Logo */}
