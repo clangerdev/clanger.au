@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Zap } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import logo from "@/assets/clanger-logo.png";
 
 const Hero = () => {
   return (
@@ -18,7 +19,7 @@ const Hero = () => {
           {/* Logo */}
           <div className="mb-4 animate-slide-up">
             <Image
-              src="/clanger-logo.png"
+              src={logo}
               alt="Clanger mascot"
               width={160}
               height={160}

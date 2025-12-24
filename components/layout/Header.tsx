@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
+import logo from "@/assets/clanger-logo.png";
 
 const navLinks = [
   { name: "Lobby", href: "/lobby" },
@@ -27,11 +29,14 @@ export function Header({ isAuthenticated = false }: HeaderProps) {
       <nav className="container flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-sm font-bold text-primary-foreground">
-              CL
-            </span>
-          </div>
+          <Image
+            src={logo}
+            alt="Clanger"
+            width={40}
+            height={40}
+            className="w-10 h-10"
+            priority
+          />
           <span className="text-xl font-bold font-display text-gradient-orange">
             Clanger
           </span>

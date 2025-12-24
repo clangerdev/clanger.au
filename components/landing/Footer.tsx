@@ -1,4 +1,5 @@
 import Image from "next/image";
+import logo from "@/assets/clanger-logo.png";
 
 const Footer = () => {
   return (
@@ -8,7 +9,7 @@ const Footer = () => {
           {/* Logo */}
           <div className="flex items-center gap-3">
             <Image
-              src="/clanger-logo.png"
+              src={logo}
               alt="Clanger"
               width={40}
               height={40}
