@@ -26,7 +26,22 @@ export default function SignupPage() {
     setError(undefined);
 
     startTransition(async () => {
-      const { data, error } = await createClient().auth.signUp({
+      const supabase = createClient();
+
+      // Check if username is already taken
+      const { data: existingUser } = await supabase
+        .from("users")
+        .select("username")
+        .eq("username", username)
+        .single();
+
+      if (existingUser) {
+        setError("This username is already taken. Please choose another one.");
+        return;
+      }
+
+      // First, sign up the user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -36,19 +51,46 @@ export default function SignupPage() {
         },
       });
 
-      if (error) {
+      if (authError) {
+        // Check if error is related to unique constraint
+        if (
+          authError.message.includes("duplicate") ||
+          authError.message.includes("unique") ||
+          authError.message.includes("violates unique constraint")
+        ) {
+          setError(
+            "This username is already taken. Please choose another one."
+          );
+        } else {
+          setError(
+            authError.message ||
+              "Unable to sign up. Please check your details and try again."
+          );
+        }
+        return;
+      }
+
+      if (!authData.user) {
+        setError("Failed to create user account");
+        return;
+      }
+
+      // Verify user record was created successfully
+      const { data: userRecord, error: userCheckError } = await supabase
+        .from("users")
+        .select("id, username")
+        .eq("id", authData.user.id)
+        .single();
+
+      if (userCheckError || !userRecord) {
         setError(
-          error.message ||
-            "Unable to sign up. Please check your details and try again."
+          "Account created but profile setup failed. Please contact support."
         );
         return;
       }
 
-      // If email confirmation is required, we can show a message;
-      // for now, just send them to sign in.
-      if (data.user) {
-        router.push("/auth/signin");
-      }
+      // Redirect to verify email page
+      router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
     });
   };
 
@@ -157,11 +199,7 @@ export default function SignupPage() {
               </p>
             )}
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isPending}
-            >
+            <Button type="submit" className="w-full" disabled={isPending}>
               {isPending ? "Creating account..." : "Create Account"}
             </Button>
           </form>
@@ -193,5 +231,3 @@ export default function SignupPage() {
     </PublicLayout>
   );
 }
-
-

@@ -59,8 +59,8 @@ export default function ForgotPasswordPage() {
                   password.
                 </p>
               </div>
-              <div className="space-y-4">
-                <Link href="/auth/signin">
+              <div>
+                <Link href="/auth/signin" className="block">
                   <Button variant="outline" className="w-full">
                     Back to Sign In
                   </Button>

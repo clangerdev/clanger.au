@@ -121,14 +121,17 @@ export function Header() {
             <div className="pt-4 border-t border-border space-y-2">
               {!loading && user ? (
                 <>
-                  <Link
-                    href="/profile"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Button variant="outline" className="w-full">
-                      Profile
-                    </Button>
-                  </Link>
+                  <div>
+                    <Link
+                      href="/profile"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block"
+                    >
+                      <Button variant="outline" className="w-full">
+                        Profile
+                      </Button>
+                    </Link>
+                  </div>
                   <Button
                     variant="outline"
                     className="w-full"
@@ -143,20 +146,26 @@ export function Header() {
                 </>
               ) : (
                 <>
-                  <Link
-                    href="/auth/signin"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Button variant="outline" className="w-full">
-                      Log In
-                    </Button>
-                  </Link>
-                  <Link
-                    href="/auth/signup"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Button className="w-full">Sign Up</Button>
-                  </Link>
+                  <div>
+                    <Link
+                      href="/auth/signin"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block"
+                    >
+                      <Button variant="outline" className="w-full">
+                        Log In
+                      </Button>
+                    </Link>
+                  </div>
+                  <div>
+                    <Link
+                      href="/auth/signup"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block"
+                    >
+                      <Button className="w-full">Sign Up</Button>
+                    </Link>
+                  </div>
                 </>
               )}
             </div>
