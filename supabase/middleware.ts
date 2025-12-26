@@ -40,8 +40,8 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
   // Public routes
-  const publicExactPaths = ["/"];
-  const publicPrefixes = ["/login", "/auth"];
+  const publicExactPaths = ["/", "/how-it-works"];
+  const publicPrefixes = ["/auth"];
 
   const pathname = request.nextUrl.pathname;
   console.log("pathname", pathname);
@@ -52,7 +52,7 @@ export async function updateSession(request: NextRequest) {
   if (!isPublic && !user) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
+    url.pathname = "/auth/signin";
     return NextResponse.redirect(url);
   }
 
