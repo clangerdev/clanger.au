@@ -1,13 +1,8 @@
-"use client";
-
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Trophy, Wallet, TrendingUp, Zap, ArrowRight } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/components/auth/AuthProvider";
 import {
   mockUser,
   mockUserEntries,
@@ -35,25 +30,14 @@ function StatCard({
         <span className="text-sm text-muted-foreground">{label}</span>
       </div>
       <p className="text-2xl font-bold">{value}</p>
-      {subtext && <p className="text-xs text-muted-foreground mt-1">{subtext}</p>}
+      {subtext && (
+        <p className="text-xs text-muted-foreground mt-1">{subtext}</p>
+      )}
     </div>
   );
 }
 
-export default function DashboardPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/auth/signin");
-    }
-  }, [loading, user, router]);
-
-  if (loading || !user) {
-    return null;
-  }
-
+export default function Dashboard() {
   const liveEntries = mockUserEntries.filter((e) => e.status === "live");
   const upcomingContests = mockContests
     .filter((c) => c.status === "upcoming")
@@ -68,7 +52,7 @@ export default function DashboardPage() {
             Welcome back, {mockUser.username}!
           </h1>
           <p className="text-muted-foreground">
-            Here&apos;s what&apos;s happening with your contests
+            Here's what's happening with your contests
           </p>
         </div>
 
@@ -183,5 +167,3 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
-
-

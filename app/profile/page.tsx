@@ -1,13 +1,21 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect, useCallback } from "react";
-import { X, Save, User } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import {
+  User,
+  Trophy,
+  Wallet,
+  TrendingUp,
+  Settings,
+  LogOut,
+} from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { PublicLayout } from "@/components/layout/PublicLayout";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { formatCurrency } from "@/lib/utils";
 
 type UserProfile = {
   id: string;
@@ -23,16 +31,15 @@ export default function ProfilePage() {
   const { user: authUser, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | undefined>();
-  const [success, setSuccess] = useState<string | undefined>();
-  const [isPending, startTransition] = useTransition();
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [username, setUsername] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  // Default stats (can be replaced with real data from database later)
+  const [stats] = useState({
+    balance: 0,
+    totalWinnings: 0,
+    contestsWon: 0,
+    contestsEntered: 0,
+  });
 
   const loadProfile = useCallback(async () => {
     if (!authUser) return;
@@ -49,13 +56,9 @@ export default function ProfilePage() {
 
       if (data) {
         setProfile(data);
-        setUsername(data.username);
-        setFirstName(data.first_name || "");
-        setLastName(data.last_name || "");
-        setAvatarPreview(data.avatar_url);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load profile");
+      console.error("Failed to load profile:", err);
     } finally {
       setLoading(false);
     }
@@ -72,162 +75,13 @@ export default function ProfilePage() {
     loadProfile();
   }, [authUser, authLoading, router, loadProfile]);
 
-  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        setError("Please select an image file");
-        return;
-      }
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError("Image size must be less than 5MB");
-        return;
-      }
-      setAvatarFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-      setError(undefined);
-    }
-  };
-
-  const removeAvatar = async () => {
-    setAvatarFile(null);
-    setAvatarPreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-
-    // If there's an existing avatar, delete it from storage
-    if (profile?.avatar_url && authUser) {
-      try {
-        const supabase = createClient();
-        // Extract the file path from the URL
-        const urlParts = profile.avatar_url.split("/");
-        const fileName = urlParts.slice(-2).join("/"); // Get user_id/filename
-
-        await supabase.storage.from("avatars").remove([fileName]);
-
-        // Update the profile to remove avatar_url
-        await supabase
-          .from("users")
-          .update({ avatar_url: null })
-          .eq("id", authUser.id);
-
-        setProfile({ ...profile, avatar_url: null });
-      } catch (err) {
-        console.error("Failed to remove avatar:", err);
-      }
-    }
-  };
-
-  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(undefined);
-    setSuccess(undefined);
-
-    if (!authUser || !profile) return;
-
-    startTransition(async () => {
-      try {
-        const supabase = createClient();
-        let avatarUrl = profile.avatar_url;
-
-        // Upload new avatar if provided
-        if (avatarFile) {
-          const fileExt = avatarFile.name.split(".").pop();
-          const fileName = `${authUser.id}/avatar.${fileExt}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from("avatars")
-            .upload(fileName, avatarFile, {
-              cacheControl: "3600",
-              upsert: true,
-            });
-
-          if (uploadError) {
-            throw new Error(`Failed to upload avatar: ${uploadError.message}`);
-          }
-
-          // Get public URL
-          const { data: urlData } = supabase.storage
-            .from("avatars")
-            .getPublicUrl(fileName);
-          avatarUrl = urlData.publicUrl;
-        }
-
-        // Check if username is already taken by another user
-        if (username.trim() !== profile.username) {
-          const { data: existingUser } = await supabase
-            .from("users")
-            .select("username")
-            .eq("username", username.trim())
-            .neq("id", authUser.id)
-            .single();
-
-          if (existingUser) {
-            throw new Error(
-              "This username is already taken. Please choose another one."
-            );
-          }
-        }
-
-        // Update user record
-        const { error: updateError } = await supabase
-          .from("users")
-          .update({
-            username: username.trim(),
-            first_name: firstName.trim() || null,
-            last_name: lastName.trim() || null,
-            avatar_url: avatarUrl,
-          })
-          .eq("id", authUser.id);
-
-        if (updateError) {
-          // Check if it's a unique constraint error
-          if (
-            updateError.message.includes("duplicate") ||
-            updateError.message.includes("unique") ||
-            updateError.code === "23505"
-          ) {
-            throw new Error(
-              "This username is already taken. Please choose another one."
-            );
-          }
-          throw new Error(`Failed to update profile: ${updateError.message}`);
-        }
-
-        // Update local state
-        setProfile({
-          ...profile,
-          username: username.trim(),
-          first_name: firstName.trim() || null,
-          last_name: lastName.trim() || null,
-          avatar_url: avatarUrl,
-        });
-        setAvatarFile(null);
-        setSuccess("Profile updated successfully!");
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to update profile"
-        );
-      }
-    });
-  };
-
   if (authLoading || loading) {
     return (
-      <PublicLayout>
-        <div className="container mx-auto px-4 py-10">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <p className="text-muted-foreground">Loading...</p>
-          </div>
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <p className="text-muted-foreground">Loading...</p>
         </div>
-      </PublicLayout>
+      </AppLayout>
     );
   }
 
@@ -236,190 +90,84 @@ export default function ProfilePage() {
   }
 
   return (
-    <PublicLayout>
-      <div className="container mx-auto px-4 py-10 max-w-2xl">
-        <h1 className="text-3xl font-bold mb-6">Edit Profile</h1>
-
-        <form className="space-y-6" onSubmit={onSubmit}>
-          {/* Avatar Upload */}
-          <div className="space-y-2">
-            <label
-              htmlFor="avatar"
-              className="block text-sm font-medium text-foreground"
-            >
-              Avatar
-            </label>
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                {avatarPreview ? (
-                  <div className="relative">
-                    <Image
-                      src={avatarPreview}
-                      alt="Avatar preview"
-                      width={120}
-                      height={120}
-                      className="rounded-full object-cover border-2 border-input"
-                    />
-                    <button
-                      type="button"
-                      onClick={removeAvatar}
-                      className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1.5 hover:bg-destructive/90 shadow-sm"
-                      aria-label="Remove avatar"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="w-[120px] h-[120px] rounded-full border-2 border-input flex items-center justify-center bg-muted">
-                    <User className="h-12 w-12 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
-              <div className="flex-1">
-                <input
-                  ref={fileInputRef}
-                  id="avatar"
-                  name="avatar"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  className="hidden"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full sm:w-auto"
-                >
-                  {avatarPreview ? "Change Avatar" : "Upload Avatar"}
-                </Button>
-                <p className="text-xs text-muted-foreground mt-1">
-                  JPG, PNG or GIF. Max 5MB.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* First Name and Last Name */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label
-                htmlFor="first_name"
-                className="block text-sm font-medium text-foreground"
-              >
-                First Name
-              </label>
-              <input
-                id="first_name"
-                name="first_name"
-                type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                placeholder="John"
-                className="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    <AppLayout>
+      <div className="max-w-2xl mx-auto space-y-8">
+        {/* Profile Header */}
+        <div className="text-center">
+          {profile.avatar_url ? (
+            <div className="w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden border-2 border-border">
+              <Image
+                src={profile.avatar_url}
+                alt="Avatar"
+                width={96}
+                height={96}
+                className="w-full h-full object-cover"
               />
             </div>
-
-            <div className="space-y-2">
-              <label
-                htmlFor="last_name"
-                className="block text-sm font-medium text-foreground"
-              >
-                Last Name
-              </label>
-              <input
-                id="last_name"
-                name="last_name"
-                type="text"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                placeholder="Doe"
-                className="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              />
+          ) : (
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-accent mx-auto mb-4 flex items-center justify-center">
+              <User className="h-12 w-12 text-primary-foreground" />
             </div>
-          </div>
-
-          {/* Username */}
-          <div className="space-y-2">
-            <label
-              htmlFor="username"
-              className="block text-sm font-medium text-foreground"
-            >
-              Username
-            </label>
-            <input
-              id="username"
-              name="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="PickMaster99"
-              className="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              required
-            />
-          </div>
-
-          {/* Email (read-only) */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-foreground">
-              Email
-            </label>
-            <div className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
-              {profile.email || authUser.email || "Not set"}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Email cannot be changed
-            </p>
-          </div>
-
-          {/* Role (read-only) */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-foreground">
-              Role
-            </label>
-            <div className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
-              <span className="capitalize">{profile.role}</span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Role cannot be changed
-            </p>
-          </div>
-
-          {error && (
-            <p className="text-sm text-destructive" aria-live="polite">
-              {error}
-            </p>
           )}
+          <h1 className="text-2xl font-bold font-display">
+            {profile.username}
+          </h1>
+          <p className="text-muted-foreground">
+            {profile.email || authUser.email || "No email"}
+          </p>
+        </div>
 
-          {success && (
-            <p
-              className="text-sm text-green-600 dark:text-green-400"
-              aria-live="polite"
-            >
-              {success}
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="p-4 rounded-xl bg-card border border-border text-center">
+            <Wallet className="h-6 w-6 text-primary mx-auto mb-2" />
+            <p className="text-2xl font-bold">
+              {formatCurrency(stats.balance)}
             </p>
-          )}
-
-          <div className="flex gap-4">
-            <Button
-              type="submit"
-              disabled={isPending}
-              className="flex items-center gap-2"
-            >
-              <Save className="h-4 w-4" />
-              {isPending ? "Saving..." : "Save Changes"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.back()}
-              disabled={isPending}
-            >
-              Cancel
-            </Button>
+            <p className="text-sm text-muted-foreground">Balance</p>
           </div>
-        </form>
+          <div className="p-4 rounded-xl bg-card border border-border text-center">
+            <TrendingUp className="h-6 w-6 text-accent mx-auto mb-2" />
+            <p className="text-2xl font-bold">
+              {formatCurrency(stats.totalWinnings)}
+            </p>
+            <p className="text-sm text-muted-foreground">Total Winnings</p>
+          </div>
+          <div className="p-4 rounded-xl bg-card border border-border text-center">
+            <Trophy className="h-6 w-6 text-yellow-400 mx-auto mb-2" />
+            <p className="text-2xl font-bold">{stats.contestsWon}</p>
+            <p className="text-sm text-muted-foreground">Contests Won</p>
+          </div>
+          <div className="p-4 rounded-xl bg-card border border-border text-center">
+            <Trophy className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+            <p className="text-2xl font-bold">{stats.contestsEntered}</p>
+            <p className="text-sm text-muted-foreground">Contests Entered</p>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="space-y-3">
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-3"
+            onClick={() => router.push("/profile/edit")}
+          >
+            <Settings className="h-5 w-5" />
+            Account Settings
+          </Button>
+          <Button variant="outline" className="w-full justify-start gap-3">
+            <Wallet className="h-5 w-5" />
+            Deposit / Withdraw
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-3 text-destructive hover:text-destructive"
+          >
+            <LogOut className="h-5 w-5" />
+            Log Out
+          </Button>
+        </div>
       </div>
-    </PublicLayout>
+    </AppLayout>
   );
 }

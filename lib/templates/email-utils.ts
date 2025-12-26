@@ -52,3 +52,4 @@ export async function getResetPasswordEmailTemplate(
   return replaceTemplateVariables(template, { RESET_URL: resetUrl });
 }
 
+
