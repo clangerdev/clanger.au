@@ -8,6 +8,7 @@ import { PublicLayout } from "@/components/layout/PublicLayout";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { formatCurrency } from "@/lib/utils";
 
 type UserProfile = {
   id: string;
@@ -17,7 +18,58 @@ type UserProfile = {
   email: string | null;
   first_name: string | null;
   last_name: string | null;
+  mobile: string | null;
+  dob: string | null;
+  kyc_verified: boolean;
+  created_at: string;
+  last_signed_in: string | null;
+  total_time_on_site: number;
+  number_of_sessions: number;
+  time_of_last_entry_into_contest: string | null;
+  number_of_contests_entered: number;
+  number_of_contests_won: number;
+  total_amount_spent: number;
 };
+
+// Format date to readable string
+function formatDate(dateString: string | null): string {
+  if (!dateString) return "Never";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+// Format date and time to readable string
+function formatDateTime(dateString: string | null): string {
+  if (!dateString) return "Never";
+  const date = new Date(dateString);
+  return date.toLocaleString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+// Format seconds to human-readable duration
+function formatDuration(seconds: number): string {
+  if (seconds === 0) return "0 minutes";
+
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days} day${days !== 1 ? "s" : ""}`);
+  if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? "s" : ""}`);
+  if (minutes > 0) parts.push(`${minutes} minute${minutes !== 1 ? "s" : ""}`);
+
+  return parts.join(", ") || "Less than a minute";
+}
 
 export default function EditProfilePage() {
   const { user: authUser, loading: authLoading } = useAuth();
@@ -31,6 +83,8 @@ export default function EditProfilePage() {
   const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [dob, setDob] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -41,7 +95,7 @@ export default function EditProfilePage() {
       const supabase = createClient();
       const { data, error } = await supabase
         .from("users")
-        .select("id, username, avatar_url, role, email, first_name, last_name")
+        .select("id, username, avatar_url, role, email, first_name, last_name, mobile, dob, kyc_verified, created_at, last_signed_in, total_time_on_site, number_of_sessions, time_of_last_entry_into_contest, number_of_contests_entered, number_of_contests_won, total_amount_spent")
         .eq("id", authUser.id)
         .single();
 
@@ -52,6 +106,8 @@ export default function EditProfilePage() {
         setUsername(data.username);
         setFirstName(data.first_name || "");
         setLastName(data.last_name || "");
+        setMobile(data.mobile || "");
+        setDob(data.dob || "");
         setAvatarPreview(data.avatar_url);
       }
     } catch (err) {
@@ -183,6 +239,8 @@ export default function EditProfilePage() {
             username: username.trim(),
             first_name: firstName.trim() || null,
             last_name: lastName.trim() || null,
+            mobile: mobile.trim() || null,
+            dob: dob.trim() || null,
             avatar_url: avatarUrl,
           })
           .eq("id", authUser.id);
@@ -207,6 +265,8 @@ export default function EditProfilePage() {
           username: username.trim(),
           first_name: firstName.trim() || null,
           last_name: lastName.trim() || null,
+          mobile: mobile.trim() || null,
+          dob: dob.trim() || null,
           avatar_url: avatarUrl,
         });
         setAvatarFile(null);
@@ -344,6 +404,44 @@ export default function EditProfilePage() {
             </div>
           </div>
 
+          {/* Mobile and Date of Birth */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label
+                htmlFor="mobile"
+                className="block text-sm font-medium text-foreground"
+              >
+                Mobile
+              </label>
+              <input
+                id="mobile"
+                name="mobile"
+                type="tel"
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                placeholder="+1 234 567 8900"
+                className="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="dob"
+                className="block text-sm font-medium text-foreground"
+              >
+                Date of Birth
+              </label>
+              <input
+                id="dob"
+                name="dob"
+                type="date"
+                value={dob}
+                onChange={(e) => setDob(e.target.value)}
+                className="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              />
+            </div>
+          </div>
+
           {/* Username */}
           <div className="space-y-2">
             <label
@@ -388,6 +486,135 @@ export default function EditProfilePage() {
             <p className="text-xs text-muted-foreground">
               Role cannot be changed
             </p>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-border my-6"></div>
+
+          {/* Read-only Account Information */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Account Information</h2>
+
+            {/* Name (combined first and last) */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-foreground">
+                Name
+              </label>
+              <div className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+                {profile.first_name || profile.last_name
+                  ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim()
+                  : "Not set"}
+              </div>
+            </div>
+
+            {/* Date of Account Creation */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-foreground">
+                Date of Account Creation
+              </label>
+              <div className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+                {formatDate(profile.created_at)}
+              </div>
+            </div>
+
+            {/* Last Signed In */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-foreground">
+                Last Signed In
+              </label>
+              <div className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+                {formatDateTime(profile.last_signed_in)}
+              </div>
+            </div>
+
+            {/* KYC Status */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-foreground">
+                KYC Status
+              </label>
+              <div className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+                <span
+                  className={
+                    profile.kyc_verified
+                      ? "text-green-400 font-medium"
+                      : "text-muted-foreground"
+                  }
+                >
+                  {profile.kyc_verified ? "Verified" : "Not Verified"}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                KYC verification status cannot be changed here
+              </p>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-border my-6"></div>
+
+          {/* Read-only Activity Statistics */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Activity Statistics</h2>
+
+            {/* Total Time on Site */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-foreground">
+                Total Time on Site
+              </label>
+              <div className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+                {formatDuration(profile.total_time_on_site)}
+              </div>
+            </div>
+
+            {/* Number of Sessions */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-foreground">
+                Number of Sessions
+              </label>
+              <div className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+                {profile.number_of_sessions}
+              </div>
+            </div>
+
+            {/* Time of Last Entry into Contest */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-foreground">
+                Time of Last Entry into Contest
+              </label>
+              <div className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+                {formatDateTime(profile.time_of_last_entry_into_contest)}
+              </div>
+            </div>
+
+            {/* Number of Contests Entered */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-foreground">
+                Number of Contests Entered
+              </label>
+              <div className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+                {profile.number_of_contests_entered}
+              </div>
+            </div>
+
+            {/* Number of Contests Won */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-foreground">
+                Number of Contests Won
+              </label>
+              <div className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+                {profile.number_of_contests_won}
+              </div>
+            </div>
+
+            {/* Total Amount Spent */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-foreground">
+                Total Amount Spent
+              </label>
+              <div className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+                {formatCurrency(profile.total_amount_spent)}
+              </div>
+            </div>
           </div>
 
           {error && (
