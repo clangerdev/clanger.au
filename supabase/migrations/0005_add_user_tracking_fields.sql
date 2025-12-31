@@ -11,3 +11,4 @@ alter table public.users
   add column if not exists number_of_contests_won integer not null default 0,
   add column if not exists total_amount_spent numeric(10, 2) not null default 0;
 
+

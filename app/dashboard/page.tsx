@@ -155,7 +155,7 @@ export default function DashboardPage() {
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {upcomingContests.map((contest) => (
-              <Link key={contest.id} href={`/contest/${contest.id}`}>
+              <Link key={contest.id} href={`/contests/${contest.id}`}>
                 <div className="p-4 rounded-xl bg-card border border-border hover:border-primary/50 transition-all card-hover">
                   <div className="flex items-center gap-2 mb-2">
                     <Badge variant="outline">{contest.sport}</Badge>

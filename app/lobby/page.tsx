@@ -25,7 +25,7 @@ function ContestCard({ contest }: { contest: Contest }) {
   const linkTo =
     contest.type === "season-long"
       ? `/draft/league-1`
-      : `/contest/${contest.id}`;
+      : `/contests/${contest.id}`;
 
   return (
     <Link href={linkTo}>

@@ -46,7 +46,7 @@ function EntryCard({ entry }: { entry: UserEntry }) {
   const linkTo =
     entry.status === "live"
       ? `/live/${entry.contestId}`
-      : `/contest/${entry.contestId}`;
+      : `/contests/${entry.contestId}`;
 
   return (
     <Link href={linkTo}>
