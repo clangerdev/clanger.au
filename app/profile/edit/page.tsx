@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useEffect, useCallback } from "react";
 import { X, Save, User } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { PublicLayout } from "@/components/layout/PublicLayout";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -286,13 +286,11 @@ export default function EditProfilePage() {
 
   if (authLoading || loading) {
     return (
-      <PublicLayout>
-        <div className="container mx-auto px-4 py-10">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <p className="text-muted-foreground">Loading...</p>
-          </div>
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <p className="text-muted-foreground">Loading...</p>
         </div>
-      </PublicLayout>
+      </AppLayout>
     );
   }
 
@@ -301,9 +299,14 @@ export default function EditProfilePage() {
   }
 
   return (
-    <PublicLayout>
-      <div className="container mx-auto px-4 py-10 max-w-2xl">
-        <h1 className="text-3xl font-bold mb-6">Account Settings</h1>
+    <AppLayout>
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold font-display">Account Settings</h1>
+          <p className="text-muted-foreground">
+            Manage your account information and preferences
+          </p>
+        </div>
 
         <form className="space-y-6" onSubmit={onSubmit}>
           {/* Avatar Upload */}
@@ -652,6 +655,6 @@ export default function EditProfilePage() {
           </div>
         </form>
       </div>
-    </PublicLayout>
+    </AppLayout>
   );
 }

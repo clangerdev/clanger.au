@@ -144,14 +144,15 @@ export default function LivePage() {
         </div>
 
         {/* View Leaderboard */}
-        <Link href={`/leaderboard/${entry.contestId}`}>
-          <Button variant="outline" className="w-full gap-2">
-            <Users className="h-4 w-4" />
-            View Full Leaderboard
-          </Button>
-        </Link>
+        <div>
+          <Link href={`/leaderboard/${entry.contestId}`}>
+            <Button variant="outline" className="w-full gap-2">
+              <Users className="h-4 w-4" />
+              View Full Leaderboard
+            </Button>
+          </Link>
+        </div>
       </div>
     </AppLayout>
   );
 }
-

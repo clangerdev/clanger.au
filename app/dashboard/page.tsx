@@ -35,13 +35,15 @@ function StatCard({
         <span className="text-sm text-muted-foreground">{label}</span>
       </div>
       <p className="text-2xl font-bold">{value}</p>
-      {subtext && <p className="text-xs text-muted-foreground mt-1">{subtext}</p>}
+      {subtext && (
+        <p className="text-xs text-muted-foreground mt-1">{subtext}</p>
+      )}
     </div>
   );
 }
 
 export default function DashboardPage() {
-  const { user, loading } = useAuth();
+  const { user, profile, loading, profileLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -50,8 +52,14 @@ export default function DashboardPage() {
     }
   }, [loading, user, router]);
 
-  if (loading || !user) {
-    return null;
+  if (loading || !user || profileLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </AppLayout>
+    );
   }
 
   const liveEntries = mockUserEntries.filter((e) => e.status === "live");
@@ -59,13 +67,16 @@ export default function DashboardPage() {
     .filter((c) => c.status === "upcoming")
     .slice(0, 3);
 
+  // Use profile username if available, otherwise fallback to email or "there"
+  const displayName = profile?.username || user.email?.split("@")[0] || "there";
+
   return (
     <AppLayout>
       <div className="space-y-8">
         {/* Welcome Header */}
         <div>
           <h1 className="text-2xl font-bold font-display">
-            Welcome back, {mockUser.username}!
+            Welcome back, {displayName}!
           </h1>
           <p className="text-muted-foreground">
             Here&apos;s what&apos;s happening with your contests
@@ -183,5 +194,3 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
-
-

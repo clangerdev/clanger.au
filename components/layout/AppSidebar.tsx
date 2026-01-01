@@ -1,7 +1,7 @@
 "use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Trophy,
@@ -9,7 +9,7 @@ import {
   Wallet,
   Settings,
   HelpCircle,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -21,26 +21,26 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   useSidebar,
-} from '@/components/ui/sidebar';
-import Image from 'next/image';
-import clangerLogo from '@/assets/clanger-logo.png';
+} from "@/components/ui/sidebar";
+import Image from "next/image";
+import clangerLogo from "@/assets/clanger-logo.png";
 
 const mainNavItems = [
-  { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
-  { title: 'Lobby', url: '/lobby', icon: Trophy },
-  { title: 'My Contests', url: '/my-contests', icon: ListChecks },
-  { title: 'Wallet', url: '/wallet', icon: Wallet },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Lobby", url: "/lobby", icon: Trophy },
+  { title: "My Contests", url: "/my-contests", icon: ListChecks },
+  { title: "Wallet", url: "/wallet", icon: Wallet },
 ];
 
 const secondaryNavItems = [
-  { title: 'Settings', url: '/settings', icon: Settings },
-  { title: 'Help', url: '/help', icon: HelpCircle },
+  { title: "Settings", url: "/settings", icon: Settings },
+  { title: "Help", url: "/help", icon: HelpCircle },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { state } = useSidebar();
-  const collapsed = state === 'collapsed';
+  const collapsed = state === "collapsed";
 
   const isActive = (path: string) => pathname === path;
 
@@ -48,7 +48,13 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-border">
       <SidebarHeader className="p-4">
         <Link href="/" className="flex items-center gap-2">
-          <Image src={clangerLogo} alt="Clanger" width={32} height={32} className="h-8 w-8" />
+          <Image
+            src={clangerLogo}
+            alt="Clanger"
+            width={32}
+            height={32}
+            className="h-8 w-8"
+          />
           {!collapsed && (
             <span className="text-lg font-bold font-display text-gradient-orange">
               Clanger
