@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Settings, User, Bell, Shield, CreditCard, Globe } from "lucide-react";
+import { User, Bell, Shield, CreditCard, Globe } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
