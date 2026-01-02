@@ -1,9 +1,18 @@
 import { useState, useCallback, useMemo } from 'react';
-import { Player, RosterConfig, AFLPosition, DAILY_SALARY_CAP } from '@/data/mockData';
+import type { AflPlayer, AflPosition } from '@/types/database';
+
+const DAILY_SALARY_CAP = 100000;
+
+export interface RosterConfig {
+  DEF: number;
+  MID: number;
+  RUC: number;
+  FWD: number;
+}
 
 interface RosterSlot {
-  position: AFLPosition;
-  player: Player | null;
+  position: AflPosition;
+  player: AflPlayer | null;
 }
 
 interface UseRosterBuilderProps {
@@ -17,14 +26,14 @@ interface UseRosterBuilderReturn {
   salaryUsed: number;
   remainingBudget: number;
   projectedTotal: number;
-  addPlayer: (player: Player) => boolean;
+  addPlayer: (player: AflPlayer) => boolean;
   removePlayer: (playerId: string) => void;
   clearRoster: () => void;
   isRosterValid: boolean;
   isRosterFull: boolean;
-  canAddPlayer: (player: Player) => { canAdd: boolean; reason?: string };
-  getOpenSlots: () => { position: AFLPosition; count: number }[];
-  getRosterByPosition: () => Record<AFLPosition, Player[]>;
+  canAddPlayer: (player: AflPlayer) => { canAdd: boolean; reason?: string };
+  getOpenSlots: () => { position: AflPosition; count: number }[];
+  getRosterByPosition: () => Record<AflPosition, AflPlayer[]>;
 }
 
 export function useRosterBuilder({
@@ -34,7 +43,7 @@ export function useRosterBuilder({
   // Initialize roster slots based on config
   const initialRoster = useMemo(() => {
     const slots: RosterSlot[] = [];
-    (Object.keys(rosterConfig) as AFLPosition[]).forEach((pos) => {
+    (Object.keys(rosterConfig) as AflPosition[]).forEach((pos) => {
       for (let i = 0; i < rosterConfig[pos]; i++) {
         slots.push({ position: pos, player: null });
       }
@@ -57,7 +66,7 @@ export function useRosterBuilder({
 
   const projectedTotal = useMemo(() => {
     return roster.reduce(
-      (total, slot) => total + (slot.player?.projectedPoints || 0),
+      (total, slot) => total + (slot.player?.avg_points || 0),
       0
     );
   }, [roster]);
@@ -72,7 +81,7 @@ export function useRosterBuilder({
 
   // Check if player can be added
   const canAddPlayer = useCallback(
-    (player: Player): { canAdd: boolean; reason?: string } => {
+    (player: AflPlayer): { canAdd: boolean; reason?: string } => {
       // Already selected
       if (selectedPlayerIds.has(player.id)) {
         return { canAdd: false, reason: 'Already selected' };
@@ -103,7 +112,7 @@ export function useRosterBuilder({
 
   // Add player to roster
   const addPlayer = useCallback(
-    (player: Player): boolean => {
+    (player: AflPlayer): boolean => {
       const { canAdd } = canAddPlayer(player);
       if (!canAdd) return false;
 
@@ -139,7 +148,7 @@ export function useRosterBuilder({
 
   // Get open slots by position
   const getOpenSlots = useCallback(() => {
-    const openByPosition: Record<AFLPosition, number> = {
+    const openByPosition: Record<AflPosition, number> = {
       DEF: 0,
       MID: 0,
       RUC: 0,
@@ -152,14 +161,14 @@ export function useRosterBuilder({
       }
     });
 
-    return (Object.keys(openByPosition) as AFLPosition[])
+    return (Object.keys(openByPosition) as AflPosition[])
       .filter((pos) => openByPosition[pos] > 0)
       .map((pos) => ({ position: pos, count: openByPosition[pos] }));
   }, [roster]);
 
   // Get roster organized by position
   const getRosterByPosition = useCallback(() => {
-    const byPosition: Record<AFLPosition, Player[]> = {
+    const byPosition: Record<AflPosition, AflPlayer[]> = {
       DEF: [],
       MID: [],
       RUC: [],

@@ -2,16 +2,22 @@ import { useState } from 'react';
 import { ChevronUp, ChevronDown, Users, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Player, SeasonLongRosterConfig } from '@/data/mockData';
+import type { AflPlayer } from '@/types/database';
 import { DraftFootyField } from './DraftFootyField';
 import { DraftPlayerStatsTable } from './DraftPlayerStatsTable';
 
+interface SeasonLongRosterConfig {
+  onField: { DEF: number; MID: number; RUC: number; FWD: number };
+  emergencies: { DEF: number; MID: number; RUC: number; FWD: number };
+  bench: number;
+}
+
 interface DraftBottomDrawerProps {
-  roster: Player[];
+  roster: AflPlayer[];
   rosterConfig: SeasonLongRosterConfig;
-  availablePlayers: Player[];
+  availablePlayers: AflPlayer[];
   isMyTurn: boolean;
-  onSelectPlayer: (player: Player) => void;
+  onSelectPlayer: (player: AflPlayer) => void;
 }
 
 type DrawerTab = 'roster' | 'players';

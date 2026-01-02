@@ -1,5 +1,36 @@
-import { DraftPick, LeagueMember, getPickInfo, TOTAL_DRAFT_PICKS } from '@/data/mockData';
 import { cn } from '@/lib/utils';
+import type { AflPlayer } from '@/types/database';
+
+const TOTAL_DRAFT_PICKS = 28;
+
+// Helper function to get pick info
+function getPickInfo(
+  pickNumber: number,
+  teamCount: number
+): { round: number; pickInRound: number; teamIndex: number } {
+  const round = Math.floor(pickNumber / teamCount);
+  const pickInRound = pickNumber % teamCount;
+  const isReversed = round % 2 === 1;
+  const teamIndex = isReversed ? teamCount - 1 - pickInRound : pickInRound;
+  return { round: round + 1, pickInRound: pickInRound + 1, teamIndex };
+}
+
+interface LeagueMember {
+  userId: string;
+  username: string;
+  isCommissioner: boolean;
+  draftPosition?: number;
+  roster: AflPlayer[];
+}
+
+interface DraftPick {
+  pickNumber: number;
+  round: number;
+  userId: string;
+  username: string;
+  player: AflPlayer;
+  timestamp: string;
+}
 
 interface DraftBoardProps {
   members: LeagueMember[];
@@ -16,7 +47,7 @@ export function DraftBoard({
 }: DraftBoardProps) {
   const teamCount = members.length;
   const totalRounds = TOTAL_DRAFT_PICKS;
-  
+
   const sortedMembers = [...members].sort(
     (a, b) => (a.draftPosition || 0) - (b.draftPosition || 0)
   );
@@ -50,7 +81,7 @@ export function DraftBoard({
         <div className="w-8 flex-shrink-0 h-8 flex items-center justify-center border-r border-border bg-background">
           <span className="text-[10px] text-muted-foreground font-medium">R</span>
         </div>
-        
+
         {/* Team headers - fill remaining width equally */}
         <div className="flex-1 flex">
           {sortedMembers.map((member) => (
@@ -74,9 +105,9 @@ export function DraftBoard({
 
       {/* Rounds - scrollable but rows fill available height */}
       <div className="flex-1 overflow-auto">
-        <div 
+        <div
           className="grid h-full"
-          style={{ 
+          style={{
             gridTemplateRows: `repeat(${totalRounds}, minmax(32px, 1fr))`,
           }}
         >

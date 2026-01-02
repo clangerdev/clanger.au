@@ -1,19 +1,42 @@
-import { MatchupTeam } from '@/data/mockData';
 import { MatchupPlayerRow } from './MatchupPlayerRow';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import type { AflPosition } from '@/types/database';
+
+interface MatchupTeamWithPlayers {
+  id: string;
+  user_id: string;
+  username: string;
+  total_points: number;
+  projected_total: number;
+  players: Array<{
+    id: string;
+    matchup_team_id: string;
+    player_id: string;
+    live_points: number;
+    is_playing: boolean;
+    game_status: 'upcoming' | 'live' | 'completed';
+    player: {
+      id: string;
+      name: string;
+      position: AflPosition;
+      salary: number;
+      avg_points: number | null;
+    };
+  }>;
+}
 
 interface MatchupRosterProps {
-  team: MatchupTeam;
+  team: MatchupTeamWithPlayers;
   isHome: boolean;
 }
 
 export function MatchupRoster({ team, isHome }: MatchupRosterProps) {
   // Group players by position
-  const positions = ['DEF', 'MID', 'RUC', 'FWD'] as const;
+  const positions: AflPosition[] = ['DEF', 'MID', 'RUC', 'FWD'];
   const playersByPosition = positions.map(pos => ({
     position: pos,
-    players: team.players.filter(p => p.position === pos)
+    players: team.players.filter(p => p.player.position === pos)
   }));
 
   return (
@@ -29,10 +52,10 @@ export function MatchupRoster({ team, isHome }: MatchupRosterProps) {
         <h3 className="font-bold text-lg">{team.username}</h3>
         <div className="flex items-baseline gap-2" style={{ justifyContent: isHome ? 'flex-start' : 'flex-end' }}>
           <span className="text-2xl font-bold text-primary">
-            {team.totalPoints.toFixed(1)}
+            {team.total_points.toFixed(1)}
           </span>
           <span className="text-xs text-muted-foreground">
-            / {team.projectedTotal} proj
+            / {team.projected_total.toFixed(1)} proj
           </span>
         </div>
       </div>
@@ -47,8 +70,8 @@ export function MatchupRoster({ team, isHome }: MatchupRosterProps) {
                   'text-[10px] text-muted-foreground font-medium mb-1 px-2',
                   !isHome && 'text-right'
                 )}>
-                  {position === 'DEF' ? 'DEFENDERS' : 
-                   position === 'MID' ? 'MIDFIELDERS' : 
+                  {position === 'DEF' ? 'DEFENDERS' :
+                   position === 'MID' ? 'MIDFIELDERS' :
                    position === 'RUC' ? 'RUCKS' : 'FORWARDS'}
                 </p>
                 <div className="space-y-0.5">

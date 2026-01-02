@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { formatSalary } from '@/data/mockData';
+import { formatSalary } from '@/lib/utils';
 
 interface SalaryCapBarProps {
   salaryUsed: number;

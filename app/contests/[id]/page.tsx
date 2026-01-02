@@ -7,18 +7,25 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RosterBuilder } from "@/components/roster/RosterBuilder";
-import {
-  getContestById,
-  formatCurrency,
-  formatNumber,
-} from "@/data/mockData";
+import { formatCurrency, formatNumber } from "@/lib/utils";
+import { useContest } from "@/hooks/useContests";
 
 export default function ContestPage() {
   const params = useParams();
   const id = params?.id as string;
-  const contest = getContestById(id || "");
+  const { data: contest, isLoading, error } = useContest(id || "");
 
-  if (!contest) {
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <p className="text-muted-foreground">Loading contest...</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (error || !contest) {
     return (
       <AppLayout>
         <div className="text-center py-12">
@@ -87,13 +94,13 @@ export default function ContestPage() {
               <div className="text-center">
                 <p className="text-xs text-muted-foreground mb-1">Prize Pool</p>
                 <p className="text-2xl font-bold text-primary">
-                  {formatCurrency(contest.prizePool)}
+                  {formatCurrency(contest.prize_pool)}
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-xs text-muted-foreground mb-1">Entry Fee</p>
                 <p className="text-2xl font-bold">
-                  {formatCurrency(contest.entryFee)}
+                  {formatCurrency(contest.entry_fee)}
                 </p>
               </div>
             </div>
@@ -103,8 +110,7 @@ export default function ContestPage() {
             <div className="flex items-center gap-1">
               <Users className="h-4 w-4" />
               <span>
-                {formatNumber(contest.entries)} /{" "}
-                {formatNumber(contest.maxEntries)} entries
+                {formatNumber(contest.max_entries)} max entries
               </span>
             </div>
             <div className="flex items-center gap-1">
@@ -116,7 +122,7 @@ export default function ContestPage() {
 
         {/* Roster Builder for Daily Contests */}
         {isDailyContest ? (
-          <RosterBuilder contest={contest} />
+          <RosterBuilder contest={contest as any} />
         ) : (
           <div className="text-center py-12 bg-card rounded-xl border border-border">
             <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

@@ -8,12 +8,11 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/auth/AuthProvider";
-import {
-  mockUser,
-  mockUserEntries,
-  mockContests,
-  formatCurrency,
-} from "@/data/mockData";
+import { formatCurrency } from "@/lib/utils";
+import { useContests } from "@/hooks/useContests";
+import { useUserTeams } from "@/hooks/useUserTeams";
+import { useWallet } from "@/hooks/useWallet";
+import { useContestEntries } from "@/hooks/useContests";
 
 function StatCard({
   icon: Icon,
@@ -45,6 +44,12 @@ function StatCard({
 export default function DashboardPage() {
   const { user, profile, loading, profileLoading } = useAuth();
   const router = useRouter();
+  const { data: wallet } = useWallet(user?.id || "");
+  const { data: userTeams = [] } = useUserTeams(user?.id || "");
+  const { data: upcomingContests = [] } = useContests({
+    status: "upcoming",
+    sport: "AFL"
+  });
 
   useEffect(() => {
     if (!loading && !user) {
@@ -62,13 +67,18 @@ export default function DashboardPage() {
     );
   }
 
-  const liveEntries = mockUserEntries.filter((e) => e.status === "live");
-  const upcomingContests = mockContests
-    .filter((c) => c.status === "upcoming")
-    .slice(0, 3);
+  // Get live entries - teams that have contest entries
+  const liveEntries = userTeams.filter((t) => t.contest_id);
+  const topContests = upcomingContests.slice(0, 3);
 
   // Use profile username if available, otherwise fallback to email or "there"
   const displayName = profile?.username || user.email?.split("@")[0] || "there";
+
+  // Calculate stats from profile if available
+  const balance = wallet?.balance || 0;
+  const totalWinnings = profile?.total_amount_spent ? 0 : 0; // TODO: Calculate from transactions
+  const contestsEntered = profile?.number_of_contests_entered || 0;
+  const contestsWon = profile?.number_of_contests_won || 0;
 
   return (
     <AppLayout>
@@ -88,18 +98,18 @@ export default function DashboardPage() {
           <StatCard
             icon={Wallet}
             label="Balance"
-            value={formatCurrency(mockUser.balance)}
+            value={formatCurrency(balance)}
           />
           <StatCard
             icon={TrendingUp}
             label="Total Winnings"
-            value={formatCurrency(mockUser.totalWinnings)}
+            value={formatCurrency(totalWinnings)}
           />
           <StatCard
             icon={Trophy}
             label="Contests Won"
-            value={mockUser.contestsWon.toString()}
-            subtext={`of ${mockUser.contestsEntered} entered`}
+            value={contestsWon.toString()}
+            subtext={`of ${contestsEntered} entered`}
           />
           <StatCard
             icon={Zap}
@@ -123,28 +133,22 @@ export default function DashboardPage() {
               </Link>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              {liveEntries.map((entry) => (
-                <Link key={entry.id} href={`/live/${entry.contestId}`}>
+              {liveEntries.map((team) => (
+                <Link key={team.id} href={team.contest_id ? `/live/${team.contest_id}` : "#"}>
                   <div className="p-4 rounded-xl bg-card border border-primary/30 hover:border-primary/50 transition-all card-hover">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline">{entry.sport}</Badge>
+                        <Badge variant="outline">AFL</Badge>
                         <Badge className="bg-primary/20 text-primary border-primary/30">
                           <Zap className="h-3 w-3 mr-1" />
                           Live
                         </Badge>
                       </div>
-                      <span className="text-sm text-muted-foreground">
-                        #{entry.currentRank} of {entry.totalEntrants}
-                      </span>
                     </div>
-                    <h3 className="font-semibold">{entry.contestName}</h3>
+                    <h3 className="font-semibold">{team.name}</h3>
                     <div className="flex items-center justify-between mt-2">
-                      <span className="text-2xl font-bold text-primary">
-                        {entry.points.toFixed(1)} pts
-                      </span>
                       <span className="text-sm text-muted-foreground">
-                        Win up to {formatCurrency(entry.potentialWin)}
+                        View Details
                       </span>
                     </div>
                   </div>
@@ -165,7 +169,7 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
-            {upcomingContests.map((contest) => (
+            {topContests.map((contest) => (
               <Link key={contest.id} href={`/contests/${contest.id}`}>
                 <div className="p-4 rounded-xl bg-card border border-border hover:border-primary/50 transition-all card-hover">
                   <div className="flex items-center gap-2 mb-2">
@@ -179,10 +183,10 @@ export default function DashboardPage() {
                   <h3 className="font-semibold mb-2">{contest.name}</h3>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-primary font-bold">
-                      {formatCurrency(contest.prizePool)}
+                      {formatCurrency(contest.prize_pool)}
                     </span>
                     <span className="text-muted-foreground">
-                      {formatCurrency(contest.entryFee)} entry
+                      {formatCurrency(contest.entry_fee)} entry
                     </span>
                   </div>
                 </div>

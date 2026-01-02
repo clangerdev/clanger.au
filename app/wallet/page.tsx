@@ -4,18 +4,46 @@ import { Wallet, Plus, ArrowDown, ArrowUp, TrendingUp } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency } from "@/data/mockData";
+import { formatCurrency } from "@/lib/utils";
+import { useWallet, useTransactions } from "@/hooks/useWallet";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function WalletPage() {
-  // Mock wallet data
-  const balance = 1250.50;
-  const recentTransactions = [
-    { id: 1, type: "deposit", amount: 500, description: "Deposit", date: "2024-01-15" },
-    { id: 2, type: "entry", amount: -25, description: "Entry Fee - Daily Contest", date: "2024-01-14" },
-    { id: 3, type: "win", amount: 150, description: "Winnings - Top 3 Finish", date: "2024-01-13" },
-    { id: 4, type: "entry", amount: -50, description: "Entry Fee - Season League", date: "2024-01-12" },
-    { id: 5, type: "deposit", amount: 200, description: "Deposit", date: "2024-01-10" },
-  ];
+  const { user } = useAuth();
+  const { data: wallet, isLoading: walletLoading } = useWallet(user?.id || "");
+  const { data: transactions = [], isLoading: transactionsLoading } =
+    useTransactions(wallet?.id || "");
+
+  if (walletLoading || transactionsLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <p className="text-muted-foreground">Loading wallet...</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const balance = wallet?.balance || 0;
+  const recentTransactions = transactions.slice(0, 10).map((t) => ({
+    id: t.id,
+    type:
+      t.type === "prize" ? "win" : t.type === "entry_fee" ? "entry" : "deposit",
+    amount:
+      t.type === "prize"
+        ? t.amount
+        : t.type === "entry_fee"
+        ? -t.amount
+        : t.amount,
+    description:
+      t.description ||
+      (t.type === "prize"
+        ? "Winnings"
+        : t.type === "entry_fee"
+        ? "Entry Fee"
+        : "Deposit"),
+    date: new Date(t.created_at).toLocaleDateString(),
+  }));
 
   return (
     <AppLayout>
@@ -72,7 +100,8 @@ export default function WalletPage() {
                   <div className="flex items-center gap-3">
                     <div
                       className={`p-2 rounded-lg ${
-                        transaction.type === "deposit" || transaction.type === "win"
+                        transaction.type === "deposit" ||
+                        transaction.type === "win"
                           ? "bg-green-500/20"
                           : "bg-red-500/20"
                       }`}
@@ -106,7 +135,8 @@ export default function WalletPage() {
                     <Badge
                       variant="outline"
                       className={
-                        transaction.type === "deposit" || transaction.type === "win"
+                        transaction.type === "deposit" ||
+                        transaction.type === "win"
                           ? "border-green-500/30 text-green-400"
                           : "border-red-500/30 text-red-400"
                       }
@@ -127,4 +157,3 @@ export default function WalletPage() {
     </AppLayout>
   );
 }
-

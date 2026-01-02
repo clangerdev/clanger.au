@@ -12,16 +12,14 @@ import {
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  mockUserEntries,
-  mockMatchups,
-  mockLeagueStandings,
-  formatCurrency,
-  type UserEntry,
-  type Matchup,
-} from "@/data/mockData";
+import { formatCurrency } from "@/lib/utils";
+import { useUserTeams } from "@/hooks/useUserTeams";
+import { useContestEntriesByUser, useContestsByIds } from "@/hooks/useContests";
+import { useLeagues } from "@/hooks/useLeagues";
+import { useAuth } from "@/components/auth/AuthProvider";
+import type { ContestEntry, MatchupWithDetails } from "@/types/database";
 
-function EntryCard({ entry }: { entry: UserEntry }) {
+function EntryCard({ entry }: { entry: EntryCardData }) {
   const statusConfig = {
     upcoming: {
       color: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -45,8 +43,8 @@ function EntryCard({ entry }: { entry: UserEntry }) {
 
   const linkTo =
     entry.status === "live"
-      ? `/live/${entry.contestId}`
-      : `/contests/${entry.contestId}`;
+      ? `/live/${entry.contest_id}`
+      : `/contests/${entry.contest_id}`;
 
   return (
     <Link href={linkTo}>
@@ -63,7 +61,7 @@ function EntryCard({ entry }: { entry: UserEntry }) {
               </Badge>
             </div>
             <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-              {entry.contestName}
+              {entry.contest_name}
             </h3>
           </div>
         </div>
@@ -71,7 +69,7 @@ function EntryCard({ entry }: { entry: UserEntry }) {
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <p className="text-xs text-muted-foreground mb-1">Entry Fee</p>
-            <p className="font-semibold">{formatCurrency(entry.entryFee)}</p>
+            <p className="font-semibold">{formatCurrency(entry.entry_fee)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">
@@ -83,34 +81,16 @@ function EntryCard({ entry }: { entry: UserEntry }) {
           </div>
         </div>
 
-        {entry.currentRank && entry.totalEntrants && (
+        {entry.current_rank && entry.total_entrants && (
           <div className="flex items-center gap-2 text-sm">
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
             <span>
               Rank{" "}
               <span className="font-medium text-foreground">
-                #{entry.currentRank}
+                #{entry.current_rank}
               </span>{" "}
-              of {entry.totalEntrants}
+              of {entry.total_entrants}
             </span>
-          </div>
-        )}
-
-        {entry.picks.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-border">
-            <p className="text-xs text-muted-foreground mb-2">Your Picks</p>
-            <div className="flex flex-wrap gap-1">
-              {entry.picks.slice(0, 3).map((player) => (
-                <Badge key={player.id} variant="secondary" className="text-xs">
-                  {player.name.split(" ").pop()}
-                </Badge>
-              ))}
-              {entry.picks.length > 3 && (
-                <Badge variant="secondary" className="text-xs">
-                  +{entry.picks.length - 3}
-                </Badge>
-              )}
-            </div>
           </div>
         )}
       </div>
@@ -118,11 +98,11 @@ function EntryCard({ entry }: { entry: UserEntry }) {
   );
 }
 
-function MatchupCard({ matchup }: { matchup: Matchup }) {
-  const isUserHome = matchup.homeTeam.userId === "user-1";
+function MatchupCard({ matchup, currentUserId }: { matchup: MatchupWithDetails; currentUserId?: string }) {
+  const isUserHome = matchup.homeTeam.user_id === currentUserId;
   const userTeam = isUserHome ? matchup.homeTeam : matchup.awayTeam;
   const opponentTeam = isUserHome ? matchup.awayTeam : matchup.homeTeam;
-  const scoreDiff = userTeam.totalPoints - opponentTeam.totalPoints;
+  const scoreDiff = userTeam.total_points - opponentTeam.total_points;
   const isWinning = scoreDiff > 0;
 
   const statusConfig = {
@@ -146,7 +126,7 @@ function MatchupCard({ matchup }: { matchup: Matchup }) {
       <div className="group p-4 rounded-xl bg-card border border-border hover:border-primary/50 transition-all card-hover">
         <div className="flex items-center justify-between mb-3">
           <Badge variant="outline" className="text-xs">
-            {matchup.leagueName}
+            {matchup.leagueName || "League"}
           </Badge>
           <Badge className={`text-xs ${config.color}`}>
             {matchup.status === "live" && <Zap className="h-3 w-3 mr-1" />}
@@ -164,7 +144,7 @@ function MatchupCard({ matchup }: { matchup: Matchup }) {
                   : ""
               }`}
             >
-              {userTeam.totalPoints.toFixed(1)}
+              {userTeam.total_points.toFixed(1)}
             </p>
           </div>
           <div className="px-3">
@@ -179,7 +159,7 @@ function MatchupCard({ matchup }: { matchup: Matchup }) {
                   : ""
               }`}
             >
-              {opponentTeam.totalPoints.toFixed(1)}
+              {opponentTeam.total_points.toFixed(1)}
             </p>
           </div>
         </div>
@@ -206,16 +186,57 @@ function MatchupCard({ matchup }: { matchup: Matchup }) {
 }
 
 export default function MyContestsPage() {
-  const liveEntries = mockUserEntries.filter((e) => e.status === "live");
-  const upcomingEntries = mockUserEntries.filter(
-    (e) => e.status === "upcoming"
-  );
-  const completedEntries = mockUserEntries.filter(
-    (e) => e.status === "completed"
+  const { user } = useAuth();
+  const { data: contestEntries = [], isLoading: entriesLoading } = useContestEntriesByUser(user?.id || "");
+  const { data: allLeagues = [] } = useLeagues();
+
+  // Get unique contest IDs from entries
+  const contestIds = [...new Set(contestEntries.map(e => e.contest_id))];
+
+  // Fetch contest details in batch
+  const { data: contests = [] } = useContestsByIds(contestIds);
+
+  // Transform contest entries to entry cards with contest data
+  const entries: EntryCardData[] = contestEntries.map(entry => {
+    const contest = contests.find(c => c.id === entry.contest_id);
+    return {
+      id: entry.id,
+      contest_id: entry.contest_id,
+      contest_name: contest?.name || "Contest",
+      status: entry.status,
+      sport: contest?.sport || "AFL",
+      entry_fee: entry.entry_fee,
+      points: entry.points,
+      current_rank: entry.current_rank || undefined,
+      total_entrants: entry.total_entrants || undefined,
+      potential_win: entry.potential_win || undefined,
+    };
+  });
+
+  // Get user's leagues (from teams that have league_id)
+  const { data: userTeams = [] } = useUserTeams(user?.id || "");
+  const userLeagues = allLeagues.filter(l =>
+    userTeams.some(ut => ut.league_id === l.id)
   );
 
-  const liveMatchups = mockMatchups.filter((m) => m.status === "live");
-  const upcomingMatchups = mockMatchups.filter((m) => m.status === "upcoming");
+  const liveEntries = entries.filter((e) => e.status === "live");
+  const upcomingEntries = entries.filter((e) => e.status === "upcoming");
+  const completedEntries = entries.filter((e) => e.status === "completed");
+
+  // For matchups, we'll need to fetch them differently
+  // For now, show empty state if no leagues
+  const liveMatchups: MatchupWithDetails[] = [];
+  const upcomingMatchups: MatchupWithDetails[] = [];
+
+  if (entriesLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <p className="text-muted-foreground">Loading your contests...</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -234,26 +255,28 @@ export default function MyContestsPage() {
         </div>
 
         {/* Season-Long Section */}
-        {mockLeagueStandings.length > 0 && (
+        {userLeagues.length > 0 && (
           <section>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <Swords className="h-5 w-5 text-primary" />
                 Season-Long Leagues
               </h2>
-              <Link href={`/standings/${mockLeagueStandings[0].leagueId}`}>
-                <Button variant="outline" size="sm">
-                  <BarChart3 className="h-4 w-4 mr-1" />
-                  View Standings
-                </Button>
-              </Link>
+              {userLeagues[0] && (
+                <Link href={`/standings/${userLeagues[0].id}`}>
+                  <Button variant="outline" size="sm">
+                    <BarChart3 className="h-4 w-4 mr-1" />
+                    View Standings
+                  </Button>
+                </Link>
+              )}
             </div>
 
             {/* Matchups */}
             {(liveMatchups.length > 0 || upcomingMatchups.length > 0) && (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {[...liveMatchups, ...upcomingMatchups].map((matchup) => (
-                  <MatchupCard key={matchup.id} matchup={matchup} />
+                  <MatchupCard key={matchup.id} matchup={matchup} currentUserId={user?.id} />
                 ))}
               </div>
             )}
@@ -305,7 +328,7 @@ export default function MyContestsPage() {
           </section>
         )}
 
-        {mockUserEntries.length === 0 && (
+        {entries.length === 0 && userLeagues.length === 0 && (
           <div className="text-center py-12">
             <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">No Entries Yet</h2>

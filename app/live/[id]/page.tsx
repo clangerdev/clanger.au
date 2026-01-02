@@ -6,14 +6,31 @@ import { ArrowLeft, Zap, TrendingUp, Users } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { mockUserEntries, mockPlayers, formatCurrency } from "@/data/mockData";
+import { formatCurrency } from "@/lib/utils";
+import { useContest } from "@/hooks/useContests";
+import { useContestEntriesByUser } from "@/hooks/useContests";
+import { useTeamRoster } from "@/hooks/useUserTeams";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function LivePage() {
   const params = useParams();
   const id = params?.id as string;
-  const entry = mockUserEntries.find((e) => e.contestId === id);
+  const { user } = useAuth();
+  const { data: contest, isLoading: contestLoading } = useContest(id || "");
+  const { data: userEntries = [] } = useContestEntriesByUser(user?.id || "");
+  const entry = userEntries.find((e) => e.contest_id === id);
 
-  if (!entry || entry.status !== "live") {
+  if (contestLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!entry || !contest || entry.status !== "live") {
     return (
       <AppLayout>
         <div className="text-center py-12">
@@ -59,10 +76,10 @@ export default function LivePage() {
               <Zap className="h-3 w-3 mr-1" />
               LIVE
             </Badge>
-            <Badge variant="outline">{entry.sport}</Badge>
+            <Badge variant="outline">{contest.sport}</Badge>
           </div>
           <h1 className="text-2xl font-bold font-display mb-4">
-            {entry.contestName}
+            {contest.name}
           </h1>
 
           <div className="grid grid-cols-3 gap-4">
@@ -77,9 +94,9 @@ export default function LivePage() {
                 <TrendingUp className="h-3 w-3 text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">Rank</p>
               </div>
-              <p className="text-3xl font-bold">#{entry.currentRank}</p>
+              <p className="text-3xl font-bold">#{entry.current_rank || "-"}</p>
               <p className="text-xs text-muted-foreground">
-                of {entry.totalEntrants}
+                of {entry.total_entrants || "-"}
               </p>
             </div>
             <div className="text-center p-4 rounded-lg bg-background/50">
@@ -87,65 +104,23 @@ export default function LivePage() {
                 Potential Win
               </p>
               <p className="text-3xl font-bold text-accent">
-                {formatCurrency(entry.potentialWin)}
+                {formatCurrency(entry.potential_win || 0)}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Live Players */}
+        {/* Live Players - TODO: Fetch actual roster */}
         <div>
           <h2 className="text-lg font-semibold mb-4">Your Lineup</h2>
-          <div className="space-y-3">
-            {livePlayers.map((player) => (
-              <div
-                key={player.id}
-                className={`flex items-center justify-between p-4 rounded-lg border ${
-                  player.isPlaying
-                    ? "bg-primary/5 border-primary/30"
-                    : "bg-card border-border"
-                }`}
-              >
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
-                      player.isPlaying
-                        ? "bg-primary/20 text-primary"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {player.position}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">{player.name}</p>
-                      {player.isPlaying && (
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-                          Playing
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {player.team} • {player.opponent}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-xl font-bold text-primary">
-                    {player.actualPoints?.toFixed(1)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Proj: {player.projectedPoints}
-                  </p>
-                </div>
-              </div>
-            ))}
+          <div className="text-center py-8 text-muted-foreground">
+            <p>Roster data coming soon</p>
           </div>
         </div>
 
         {/* View Leaderboard */}
         <div>
-          <Link href={`/leaderboard/${entry.contestId}`}>
+          <Link href={`/leaderboard/${entry.contest_id}`}>
             <Button variant="outline" className="w-full gap-2">
               <Users className="h-4 w-4" />
               View Full Leaderboard

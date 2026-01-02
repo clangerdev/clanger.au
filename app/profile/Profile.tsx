@@ -8,9 +8,46 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { mockUser, formatCurrency } from "@/data/mockData";
+import { formatCurrency } from "@/lib/utils";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useWallet } from "@/hooks/useWallet";
+import { useQuery } from "@tanstack/react-query";
+import { createClient } from "@/supabase/client";
 
 export default function Profile() {
+  const { user, profile } = useAuth();
+  const { data: wallet } = useWallet(user?.id || "");
+
+  // Fetch extended profile data with contest stats
+  const { data: extendedProfile } = useQuery({
+    queryKey: ["user-profile-extended", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("users")
+        .select(
+          "number_of_contests_entered, number_of_contests_won, total_amount_spent"
+        )
+        .eq("id", user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  if (!user) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <p className="text-muted-foreground">
+            Please sign in to view your profile
+          </p>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto space-y-8">
@@ -20,9 +57,9 @@ export default function Profile() {
             <User className="h-12 w-12 text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-bold font-display">
-            {mockUser.username}
+            {profile?.username || user.email?.split("@")[0] || "User"}
           </h1>
-          <p className="text-muted-foreground">{mockUser.email}</p>
+          <p className="text-muted-foreground">{user.email}</p>
         </div>
 
         {/* Stats */}
@@ -30,25 +67,27 @@ export default function Profile() {
           <div className="p-4 rounded-xl bg-card border border-border text-center">
             <Wallet className="h-6 w-6 text-primary mx-auto mb-2" />
             <p className="text-2xl font-bold">
-              {formatCurrency(mockUser.balance)}
+              {formatCurrency(wallet?.balance || 0)}
             </p>
             <p className="text-sm text-muted-foreground">Balance</p>
           </div>
           <div className="p-4 rounded-xl bg-card border border-border text-center">
             <TrendingUp className="h-6 w-6 text-accent mx-auto mb-2" />
-            <p className="text-2xl font-bold">
-              {formatCurrency(mockUser.totalWinnings)}
-            </p>
+            <p className="text-2xl font-bold">{formatCurrency(0)}</p>
             <p className="text-sm text-muted-foreground">Total Winnings</p>
           </div>
           <div className="p-4 rounded-xl bg-card border border-border text-center">
             <Trophy className="h-6 w-6 text-yellow-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{mockUser.contestsWon}</p>
+            <p className="text-2xl font-bold">
+              {extendedProfile?.number_of_contests_won || 0}
+            </p>
             <p className="text-sm text-muted-foreground">Contests Won</p>
           </div>
           <div className="p-4 rounded-xl bg-card border border-border text-center">
             <Trophy className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
-            <p className="text-2xl font-bold">{mockUser.contestsEntered}</p>
+            <p className="text-2xl font-bold">
+              {extendedProfile?.number_of_contests_entered || 0}
+            </p>
             <p className="text-sm text-muted-foreground">Contests Entered</p>
           </div>
         </div>

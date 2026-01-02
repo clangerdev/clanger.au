@@ -5,16 +5,17 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Contest, Player, formatCurrency, formatSalary } from '@/data/mockData';
-import { Trophy, Zap } from 'lucide-react';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { formatCurrency, formatSalary } from "@/lib/utils";
+import type { Contest, AflPlayer } from "@/types/database";
+import { Trophy, Zap } from "lucide-react";
 
 interface EntryConfirmModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contest: Contest;
-  roster: Player[];
+  roster: AflPlayer[];
   projectedPoints: number;
   salaryUsed: number;
   onConfirm: () => void;
@@ -47,12 +48,14 @@ export function EntryConfirmModal({
           <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-card border border-border">
             <div>
               <p className="text-xs text-muted-foreground">Entry Fee</p>
-              <p className="font-bold text-lg">{formatCurrency(contest.entryFee)}</p>
+              <p className="font-bold text-lg">
+                {formatCurrency(contest.entry_fee)}
+              </p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Prize Pool</p>
               <p className="font-bold text-lg text-primary">
-                {formatCurrency(contest.prizePool)}
+                {formatCurrency(contest.prize_pool)}
               </p>
             </div>
           </div>
@@ -88,7 +91,9 @@ export function EntryConfirmModal({
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Projected Pts</p>
-              <p className="font-bold text-primary">{projectedPoints.toFixed(1)}</p>
+              <p className="font-bold text-primary">
+                {projectedPoints.toFixed(1)}
+              </p>
             </div>
           </div>
         </div>
@@ -103,7 +108,7 @@ export function EntryConfirmModal({
           </Button>
           <Button onClick={onConfirm} className="w-full sm:w-auto">
             <Zap className="h-4 w-4 mr-2" />
-            Enter - {formatCurrency(contest.entryFee)}
+            Enter - {formatCurrency(contest.entry_fee)}
           </Button>
         </DialogFooter>
       </DialogContent>

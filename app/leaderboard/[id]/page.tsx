@@ -6,29 +6,9 @@ import { ArrowLeft, Trophy, Medal, Crown } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getContestById, formatCurrency } from "@/data/mockData";
-
-// Mock leaderboard data
-const mockLeaderboard = [
-  { rank: 1, username: "BirdKing23", points: 187.4, prize: 2500 },
-  { rank: 2, username: "FantasyPro99", points: 182.1, prize: 1500 },
-  { rank: 3, username: "LuckyDuck", points: 176.8, prize: 1000 },
-  { rank: 4, username: "PickMaster", points: 171.2, prize: 500 },
-  { rank: 5, username: "SportsGuru", points: 168.9, prize: 250 },
-  { rank: 6, username: "WinnerCircle", points: 165.3, prize: 150 },
-  { rank: 7, username: "TopTierPicks", points: 162.7, prize: 100 },
-  { rank: 8, username: "ChampMode", points: 159.4, prize: 75 },
-  { rank: 9, username: "ElitePlayer", points: 156.1, prize: 50 },
-  { rank: 10, username: "RisingStar", points: 153.8, prize: 25 },
-  // Current user
-  {
-    rank: 127,
-    username: "DuckMaster99",
-    points: 142.5,
-    prize: 0,
-    isCurrentUser: true,
-  },
-];
+import { formatCurrency } from "@/lib/utils";
+import { useContest, useContestEntries } from "@/hooks/useContests";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 function getRankIcon(rank: number) {
   if (rank === 1) return <Crown className="h-5 w-5 text-yellow-400" />;
@@ -40,7 +20,19 @@ function getRankIcon(rank: number) {
 export default function LeaderboardPage() {
   const params = useParams();
   const id = params?.id as string;
-  const contest = getContestById(id || "");
+  const { user } = useAuth();
+  const { data: contest, isLoading: contestLoading } = useContest(id || "");
+  const { data: entries = [], isLoading: entriesLoading } = useContestEntries(id || "");
+
+  if (contestLoading || entriesLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <p className="text-muted-foreground">Loading leaderboard...</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (!contest) {
     return (
@@ -89,7 +81,7 @@ export default function LeaderboardPage() {
           </div>
           <h1 className="text-2xl font-bold font-display">{contest.name}</h1>
           <p className="text-muted-foreground mt-1">
-            Prize Pool: {formatCurrency(contest.prizePool)}
+            Prize Pool: {formatCurrency(contest.prize_pool)}
           </p>
         </div>
 
@@ -102,47 +94,57 @@ export default function LeaderboardPage() {
           </div>
 
           <div className="divide-y divide-border">
-            {mockLeaderboard.map((entry) => (
-              <div
-                key={entry.rank}
-                className={`grid grid-cols-4 gap-4 p-4 items-center ${
-                  entry.isCurrentUser
-                    ? "bg-primary/10 border-l-2 border-l-primary"
-                    : ""
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  {getRankIcon(entry.rank)}
-                  <span
-                    className={`font-medium ${
-                      entry.rank <= 3 ? "text-primary" : ""
+            {entries.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground">
+                <p>No entries yet</p>
+              </div>
+            ) : (
+              entries.map((entry, index) => {
+                const rank = entry.current_rank || index + 1;
+                const isCurrentUser = entry.user_id === user?.id;
+                return (
+                  <div
+                    key={entry.id}
+                    className={`grid grid-cols-4 gap-4 p-4 items-center ${
+                      isCurrentUser
+                        ? "bg-primary/10 border-l-2 border-l-primary"
+                        : ""
                     }`}
                   >
-                    #{entry.rank}
-                  </span>
-                </div>
-                <div className="col-span-2">
-                  <span
-                    className={
-                      entry.isCurrentUser ? "font-semibold text-primary" : ""
-                    }
-                  >
-                    {entry.username}
-                    {entry.isCurrentUser && " (You)"}
-                  </span>
-                  {entry.prize > 0 && (
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      {formatCurrency(entry.prize)}
-                    </Badge>
-                  )}
-                </div>
-                <div className="text-right">
-                  <span className="font-semibold">
-                    {entry.points.toFixed(1)}
-                  </span>
-                </div>
-              </div>
-            ))}
+                    <div className="flex items-center gap-2">
+                      {getRankIcon(rank)}
+                      <span
+                        className={`font-medium ${
+                          rank <= 3 ? "text-primary" : ""
+                        }`}
+                      >
+                        #{rank}
+                      </span>
+                    </div>
+                    <div className="col-span-2">
+                      <span
+                        className={
+                          isCurrentUser ? "font-semibold text-primary" : ""
+                        }
+                      >
+                        User {entry.user_id.slice(0, 8)}
+                        {isCurrentUser && " (You)"}
+                      </span>
+                      {entry.potential_win && entry.potential_win > 0 && (
+                        <Badge variant="secondary" className="ml-2 text-xs">
+                          {formatCurrency(entry.potential_win)}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <span className="font-semibold">
+                        {entry.points.toFixed(1)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>

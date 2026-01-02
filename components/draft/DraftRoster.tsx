@@ -1,11 +1,17 @@
-import { Player, AFLPosition, SeasonLongRosterConfig } from '@/data/mockData';
 import { cn } from '@/lib/utils';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import type { AflPlayer, AflPosition } from '@/types/database';
+
+interface SeasonLongRosterConfig {
+  onField: { DEF: number; MID: number; RUC: number; FWD: number };
+  emergencies: { DEF: number; MID: number; RUC: number; FWD: number };
+  bench: number;
+}
 
 interface DraftRosterProps {
-  roster: Player[];
+  roster: AflPlayer[];
   rosterConfig: SeasonLongRosterConfig;
   username: string;
   isCurrentUser?: boolean;
@@ -17,10 +23,10 @@ export function DraftRoster({
   isCurrentUser = false,
 }: DraftRosterProps) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const positions: AFLPosition[] = ['DEF', 'MID', 'RUC', 'FWD'];
+  const positions: AflPosition[] = ['DEF', 'MID', 'RUC', 'FWD'];
 
   // Count players by position
-  const countByPosition: Record<AFLPosition, number> = {
+  const countByPosition: Record<AflPosition, number> = {
     DEF: roster.filter((p) => p.position === 'DEF').length,
     MID: roster.filter((p) => p.position === 'MID').length,
     RUC: roster.filter((p) => p.position === 'RUC').length,
