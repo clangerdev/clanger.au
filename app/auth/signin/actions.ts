@@ -3,10 +3,8 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { loginWithEmailPassword } from "@/services/auth";
-
-export type LoginActionState = {
-  error?: string;
-};
+import type { LoginActionState } from "@/types/auth";
+export type { LoginActionState } from "@/types/auth";
 
 export async function loginAction(
   _prevState: LoginActionState,

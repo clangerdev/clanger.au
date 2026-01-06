@@ -6,12 +6,9 @@ import { Trophy, Users, Clock, Zap } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  mockContests,
-  formatCurrency,
-  formatNumber,
-  type Contest,
-} from "@/data/mockData";
+import { formatCurrency, formatNumber } from "@/lib/utils";
+import { useContests } from "@/hooks/useContests";
+import type { Contest } from "@/types/database";
 
 const sportFilters = ["All", "NFL", "NBA", "MLB", "NHL"] as const;
 
@@ -57,13 +54,13 @@ function ContestCard({ contest }: { contest: Contest }) {
           <div>
             <p className="text-xs text-muted-foreground mb-1">Prize Pool</p>
             <p className="text-lg font-bold text-primary">
-              {formatCurrency(contest.prizePool)}
+              {formatCurrency(contest.prize_pool)}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">Entry</p>
             <p className="text-lg font-bold">
-              {formatCurrency(contest.entryFee)}
+              {formatCurrency(contest.entry_fee)}
             </p>
           </div>
         </div>
@@ -72,8 +69,7 @@ function ContestCard({ contest }: { contest: Contest }) {
           <div className="flex items-center gap-1">
             <Users className="h-4 w-4" />
             <span>
-              {formatNumber(contest.entries)} /{" "}
-              {formatNumber(contest.maxEntries)}
+              {formatNumber(contest.max_entries)} max
             </span>
           </div>
           <div className="flex items-center gap-1">
@@ -87,7 +83,7 @@ function ContestCard({ contest }: { contest: Contest }) {
           <div
             className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all"
             style={{
-              width: `${(contest.entries / contest.maxEntries) * 100}%`,
+              width: `50%`, // TODO: Calculate from actual entries count
             }}
           />
         </div>
@@ -98,11 +94,36 @@ function ContestCard({ contest }: { contest: Contest }) {
 
 export default function LobbyPage() {
   const [activeSport, setActiveSport] = useState<string>("All");
+  const { data: contests = [], isLoading, error } = useContests({ sport: "AFL" });
 
   const filteredContests =
     activeSport === "All"
-      ? mockContests
-      : mockContests.filter((c) => c.sport === activeSport);
+      ? contests
+      : contests.filter((c) => c.sport === activeSport);
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <p className="text-muted-foreground">Loading contests...</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppLayout>
+        <div className="text-center py-12">
+          <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Error Loading Contests</h2>
+          <p className="text-muted-foreground">
+            {error instanceof Error ? error.message : "Failed to load contests"}
+          </p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -118,7 +139,7 @@ export default function LobbyPage() {
           <div className="flex items-center gap-2">
             <Trophy className="h-5 w-5 text-primary" />
             <span className="text-sm font-medium">
-              {mockContests.length} Active Contests
+              {contests.length} Active Contests
             </span>
           </div>
         </div>

@@ -3,12 +3,13 @@ import { Trophy, Wallet, TrendingUp, Zap, ArrowRight } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  mockUser,
-  mockUserEntries,
-  mockContests,
-  formatCurrency,
-} from "@/data/mockData";
+import { formatCurrency } from "@/lib/utils";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useWallet } from "@/hooks/useWallet";
+import { useContestEntriesByUser } from "@/hooks/useContests";
+import { useContests } from "@/hooks/useContests";
+import { useQuery } from "@tanstack/react-query";
+import { createClient } from "@/supabase/client";
 
 function StatCard({
   icon: Icon,
@@ -38,10 +39,39 @@ function StatCard({
 }
 
 export default function Dashboard() {
-  const liveEntries = mockUserEntries.filter((e) => e.status === "live");
-  const upcomingContests = mockContests
-    .filter((c) => c.status === "upcoming")
-    .slice(0, 3);
+  const { user, profile } = useAuth();
+  const { data: wallet } = useWallet(user?.id || "");
+  const { data: contestEntries = [] } = useContestEntriesByUser(user?.id || "");
+  const { data: contests = [] } = useContests({ status: "upcoming" });
+
+  // Fetch extended profile stats
+  const { data: extendedProfile } = useQuery({
+    queryKey: ["user-profile-extended", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("users")
+        .select("number_of_contests_entered, number_of_contests_won")
+        .eq("id", user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const liveEntries = contestEntries.filter((e) => e.status === "live");
+  const upcomingContests = contests.slice(0, 3);
+
+  if (!user) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <p className="text-muted-foreground">Please sign in to view your dashboard</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -49,7 +79,7 @@ export default function Dashboard() {
         {/* Welcome Header */}
         <div>
           <h1 className="text-2xl font-bold font-display">
-            Welcome back, {mockUser.username}!
+            Welcome back, {profile?.username || user.email?.split("@")[0] || "User"}!
           </h1>
           <p className="text-muted-foreground">
             Here's what's happening with your contests
@@ -61,18 +91,18 @@ export default function Dashboard() {
           <StatCard
             icon={Wallet}
             label="Balance"
-            value={formatCurrency(mockUser.balance)}
+            value={formatCurrency(wallet?.balance || 0)}
           />
           <StatCard
             icon={TrendingUp}
             label="Total Winnings"
-            value={formatCurrency(mockUser.totalWinnings)}
+            value={formatCurrency(0)}
           />
           <StatCard
             icon={Trophy}
             label="Contests Won"
-            value={mockUser.contestsWon.toString()}
-            subtext={`of ${mockUser.contestsEntered} entered`}
+            value={(extendedProfile?.number_of_contests_won || 0).toString()}
+            subtext={`of ${extendedProfile?.number_of_contests_entered || 0} entered`}
           />
           <StatCard
             icon={Zap}
@@ -97,27 +127,27 @@ export default function Dashboard() {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               {liveEntries.map((entry) => (
-                <Link key={entry.id} href={`/live/${entry.contestId}`}>
+                <Link key={entry.id} href={`/live/${entry.contest_id}`}>
                   <div className="p-4 rounded-xl bg-card border border-primary/30 hover:border-primary/50 transition-all card-hover">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline">{entry.sport}</Badge>
+                        <Badge variant="outline">AFL</Badge>
                         <Badge className="bg-primary/20 text-primary border-primary/30">
                           <Zap className="h-3 w-3 mr-1" />
                           Live
                         </Badge>
                       </div>
                       <span className="text-sm text-muted-foreground">
-                        #{entry.currentRank} of {entry.totalEntrants}
+                        #{entry.current_rank || "-"} of {entry.total_entrants || "-"}
                       </span>
                     </div>
-                    <h3 className="font-semibold">{entry.contestName}</h3>
+                    <h3 className="font-semibold">Contest Entry</h3>
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-2xl font-bold text-primary">
                         {entry.points.toFixed(1)} pts
                       </span>
                       <span className="text-sm text-muted-foreground">
-                        Win up to {formatCurrency(entry.potentialWin)}
+                        Win up to {formatCurrency(entry.potential_win || 0)}
                       </span>
                     </div>
                   </div>
@@ -152,10 +182,10 @@ export default function Dashboard() {
                   <h3 className="font-semibold mb-2">{contest.name}</h3>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-primary font-bold">
-                      {formatCurrency(contest.prizePool)}
+                      {formatCurrency(contest.prize_pool)}
                     </span>
                     <span className="text-muted-foreground">
-                      {formatCurrency(contest.entryFee)} entry
+                      {formatCurrency(contest.entry_fee)} entry
                     </span>
                   </div>
                 </div>

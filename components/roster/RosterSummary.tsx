@@ -1,10 +1,11 @@
-import { RosterConfig, AFLPosition } from '@/data/mockData';
 import { cn } from '@/lib/utils';
 import { Check, AlertCircle } from 'lucide-react';
+import type { AflPosition } from '@/types/database';
+import type { RosterConfig } from '@/hooks/useRosterBuilder';
 
 interface RosterSummaryProps {
   rosterConfig: RosterConfig;
-  filledSlots: Record<AFLPosition, number>;
+  filledSlots: Record<AflPosition, number>;
   projectedTotal: number;
   isRosterValid: boolean;
   isRosterFull: boolean;
@@ -16,7 +17,7 @@ export function RosterSummary({
   projectedTotal,
   isRosterValid,
 }: RosterSummaryProps) {
-  const positions: AFLPosition[] = ['DEF', 'MID', 'RUC', 'FWD'];
+  const positions: AflPosition[] = ['DEF', 'MID', 'RUC', 'FWD'];
   const totalRequired = Object.values(rosterConfig).reduce((a, b) => a + b, 0);
   const totalFilled = Object.values(filledSlots).reduce((a, b) => a + b, 0);
 

@@ -1,14 +1,15 @@
-import { Player, formatSalary } from '@/data/mockData';
+import { formatSalary } from '@/lib/utils';
+import type { AflPlayer } from '@/types/database';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Minus, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PlayerCardProps {
-  player: Player;
+  player: AflPlayer;
   isSelected?: boolean;
   canAdd?: { canAdd: boolean; reason?: string };
-  onAdd?: (player: Player) => void;
+  onAdd?: (player: AflPlayer) => void;
   onRemove?: (playerId: string) => void;
   compact?: boolean;
 }
@@ -36,7 +37,7 @@ export function PlayerCard({
           </div>
           <div>
             <p className="font-medium text-sm">{player.name}</p>
-            <p className="text-xs text-muted-foreground">{player.team}</p>
+            <p className="text-xs text-muted-foreground">Team ID: {player.team_id.slice(0, 8)}</p>
           </div>
         </div>
         {onRemove && (
@@ -80,7 +81,7 @@ export function PlayerCard({
             )}
           </div>
           <p className="text-sm text-muted-foreground">
-            {player.team} • {player.opponent} • {player.gameTime}
+            {player.position} • {formatSalary(player.salary)}
           </p>
         </div>
       </div>
@@ -89,7 +90,7 @@ export function PlayerCard({
         <div className="text-right">
           <p className="font-semibold text-primary">{formatSalary(player.salary)}</p>
           <p className="text-xs text-muted-foreground">
-            {player.projectedPoints.toFixed(1)} pts
+            {player.avg_points?.toFixed(1) || '0.0'} pts
           </p>
         </div>
 

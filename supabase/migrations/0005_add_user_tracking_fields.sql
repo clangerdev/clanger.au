@@ -12,3 +12,4 @@ alter table public.users
   add column if not exists total_amount_spent numeric(10, 2) not null default 0;
 
 
+

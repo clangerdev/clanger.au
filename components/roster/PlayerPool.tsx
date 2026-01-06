@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Player, AFLPosition, mockPlayers, formatSalary } from '@/data/mockData';
+import { formatSalary } from '@/lib/utils';
+import type { AflPlayer, AflPosition } from '@/types/database';
 import { PlayerCard } from './PlayerCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -15,67 +16,67 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface PlayerPoolProps {
+  players: AflPlayer[];
   selectedPlayerIds: Set<string>;
-  canAddPlayer: (player: Player) => { canAdd: boolean; reason?: string };
-  onAddPlayer: (player: Player) => void;
+  canAddPlayer: (player: AflPlayer) => { canAdd: boolean; reason?: string };
+  onAddPlayer: (player: AflPlayer) => void;
   remainingBudget: number;
 }
 
 type SortOption = 'salary-desc' | 'salary-asc' | 'points-desc' | 'points-asc' | 'value-desc';
 
-const POSITION_FILTERS: (AFLPosition | 'ALL')[] = ['ALL', 'DEF', 'MID', 'RUC', 'FWD'];
+const POSITION_FILTERS: (AflPosition | 'ALL')[] = ['ALL', 'DEF', 'MID', 'RUC', 'FWD'];
 
 export function PlayerPool({
+  players,
   selectedPlayerIds,
   canAddPlayer,
   onAddPlayer,
   remainingBudget,
 }: PlayerPoolProps) {
   const [search, setSearch] = useState('');
-  const [positionFilter, setPositionFilter] = useState<AFLPosition | 'ALL'>('ALL');
+  const [positionFilter, setPositionFilter] = useState<AflPosition | 'ALL'>('ALL');
   const [sortBy, setSortBy] = useState<SortOption>('salary-desc');
 
   const filteredPlayers = useMemo(() => {
-    let players = [...mockPlayers];
+    let filtered = [...players];
 
     // Filter by search
     if (search) {
       const searchLower = search.toLowerCase();
-      players = players.filter(
+      filtered = filtered.filter(
         (p) =>
-          p.name.toLowerCase().includes(searchLower) ||
-          p.team.toLowerCase().includes(searchLower)
+          p.name.toLowerCase().includes(searchLower)
       );
     }
 
     // Filter by position
     if (positionFilter !== 'ALL') {
-      players = players.filter((p) => p.position === positionFilter);
+      filtered = filtered.filter((p) => p.position === positionFilter);
     }
 
     // Sort
-    players.sort((a, b) => {
+    filtered.sort((a, b) => {
       switch (sortBy) {
         case 'salary-desc':
           return b.salary - a.salary;
         case 'salary-asc':
           return a.salary - b.salary;
         case 'points-desc':
-          return b.projectedPoints - a.projectedPoints;
+          return (b.avg_points || 0) - (a.avg_points || 0);
         case 'points-asc':
-          return a.projectedPoints - b.projectedPoints;
+          return (a.avg_points || 0) - (b.avg_points || 0);
         case 'value-desc':
-          return (
-            b.projectedPoints / (b.salary / 1000) -
-            a.projectedPoints / (a.salary / 1000)
-          );
+          const aValue = a.avg_points && a.salary ? (a.avg_points / a.salary) * 1000 : 0;
+          const bValue = b.avg_points && b.salary ? (b.avg_points / b.salary) * 1000 : 0;
+          return bValue - aValue;
         default:
           return 0;
       }
     });
 
-    return players;
-  }, [search, positionFilter, sortBy]);
+    return filtered;
+  }, [players, search, positionFilter, sortBy]);
 
   return (
     <div className="flex flex-col h-full">

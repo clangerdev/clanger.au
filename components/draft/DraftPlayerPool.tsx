@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Player, AFLPosition } from '@/data/mockData';
+import type { AflPlayer, AflPosition } from '@/types/database';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -7,13 +7,13 @@ import { Search, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DraftPlayerPoolProps {
-  availablePlayers: Player[];
+  availablePlayers: AflPlayer[];
   isMyTurn: boolean;
-  onSelectPlayer: (player: Player) => void;
+  onSelectPlayer: (player: AflPlayer) => void;
   selectedPlayerId?: string;
 }
 
-const POSITION_FILTERS: (AFLPosition | 'ALL')[] = ['ALL', 'DEF', 'MID', 'RUC', 'FWD'];
+const POSITION_FILTERS: (AflPosition | 'ALL')[] = ['ALL', 'DEF', 'MID', 'RUC', 'FWD'];
 
 export function DraftPlayerPool({
   availablePlayers,
@@ -22,7 +22,7 @@ export function DraftPlayerPool({
   selectedPlayerId,
 }: DraftPlayerPoolProps) {
   const [search, setSearch] = useState('');
-  const [positionFilter, setPositionFilter] = useState<AFLPosition | 'ALL'>('ALL');
+  const [positionFilter, setPositionFilter] = useState<AflPosition | 'ALL'>('ALL');
   const [localSelectedId, setLocalSelectedId] = useState<string | undefined>(selectedPlayerId);
 
   const filteredPlayers = useMemo(() => {
@@ -33,7 +33,7 @@ export function DraftPlayerPool({
       players = players.filter(
         (p) =>
           p.name.toLowerCase().includes(searchLower) ||
-          p.team.toLowerCase().includes(searchLower)
+          p.team_id.toLowerCase().includes(searchLower)
       );
     }
 
@@ -41,11 +41,11 @@ export function DraftPlayerPool({
       players = players.filter((p) => p.position === positionFilter);
     }
 
-    players.sort((a, b) => b.projectedPoints - a.projectedPoints);
+    players.sort((a, b) => (b.avg_points || 0) - (a.avg_points || 0));
     return players;
   }, [availablePlayers, search, positionFilter]);
 
-  const handlePlayerClick = (player: Player) => {
+  const handlePlayerClick = (player: AflPlayer) => {
     if (!isMyTurn) return;
     setLocalSelectedId(player.id);
   };
@@ -58,7 +58,7 @@ export function DraftPlayerPool({
     }
   };
 
-  const positionColors: Record<AFLPosition, string> = {
+  const positionColors: Record<AflPosition, string> = {
     DEF: 'bg-blue-500/30 text-blue-300',
     MID: 'bg-green-500/30 text-green-300',
     RUC: 'bg-purple-500/30 text-purple-300',
@@ -79,7 +79,7 @@ export function DraftPlayerPool({
             </span>
           )}
         </div>
-        
+
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
@@ -90,7 +90,7 @@ export function DraftPlayerPool({
             className="pl-7 h-7 text-xs"
           />
         </div>
-        
+
         {/* Position Filters */}
         <div className="flex gap-0.5">
           {POSITION_FILTERS.map((pos) => (
@@ -127,18 +127,22 @@ export function DraftPlayerPool({
                 <div
                   className={cn(
                     'w-6 h-6 rounded flex items-center justify-center text-[9px] font-bold',
-                    positionColors[player.position as AFLPosition]
+                    positionColors[player.position]
                   )}
                 >
                   {player.position}
                 </div>
                 <div>
-                  <p className="font-medium text-[11px] leading-tight">{player.name}</p>
-                  <p className="text-[9px] text-muted-foreground">{player.team}</p>
+                  <p className="font-medium text-[11px] leading-tight">
+                    {player.name}
+                  </p>
+                  <p className="text-[9px] text-muted-foreground">
+                    {player.team_id}
+                  </p>
                 </div>
               </div>
               <span className="font-bold text-primary text-[10px]">
-                {player.projectedPoints.toFixed(0)}
+                {player.avg_points?.toFixed(0) || "0"}
               </span>
             </div>
           ))}

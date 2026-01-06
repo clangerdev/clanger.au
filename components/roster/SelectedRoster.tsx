@@ -1,10 +1,11 @@
-import { Player, RosterConfig, AFLPosition } from '@/data/mockData';
 import { PlayerCard } from './PlayerCard';
 import { cn } from '@/lib/utils';
+import type { AflPlayer, AflPosition } from '@/types/database';
+import type { RosterConfig } from '@/hooks/useRosterBuilder';
 
 interface RosterSlot {
-  position: AFLPosition;
-  player: Player | null;
+  position: AflPosition;
+  player: AflPlayer | null;
 }
 
 interface SelectedRosterProps {
@@ -18,13 +19,13 @@ export function SelectedRoster({
   rosterConfig,
   onRemovePlayer,
 }: SelectedRosterProps) {
-  const positions: AFLPosition[] = ['DEF', 'MID', 'RUC', 'FWD'];
+  const positions: AflPosition[] = ['DEF', 'MID', 'RUC', 'FWD'];
 
   // Group roster by position
   const rosterByPosition = positions.reduce((acc, pos) => {
     acc[pos] = roster.filter((slot) => slot.position === pos);
     return acc;
-  }, {} as Record<AFLPosition, RosterSlot[]>);
+  }, {} as Record<AflPosition, RosterSlot[]>);
 
   return (
     <div className="space-y-4">

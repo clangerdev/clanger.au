@@ -6,16 +6,26 @@ import { ArrowLeft, Zap, Clock, Trophy, Circle, BarChart3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MatchupRoster } from "@/components/matchup/MatchupRoster";
-import { getMatchupById } from "@/data/mockData";
+import { useMatchup } from "@/hooks/useMatchups";
 import { cn } from "@/lib/utils";
 import { AppLayout } from "@/components/layout/AppLayout";
 
 export default function MatchupPage() {
   const params = useParams();
   const id = params?.id as string;
-  const matchup = getMatchupById(id || "");
+  const { data: matchup, isLoading, error } = useMatchup(id || "");
 
-  if (!matchup) {
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <p className="text-muted-foreground">Loading matchup...</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (error || !matchup) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center min-h-[calc(100vh-3.5rem)]">
@@ -34,7 +44,7 @@ export default function MatchupPage() {
     );
   }
 
-  const scoreDiff = matchup.homeTeam.totalPoints - matchup.awayTeam.totalPoints;
+  const scoreDiff = matchup.homeTeam.total_points - matchup.awayTeam.total_points;
   const isHomeWinning = scoreDiff > 0;
   const isTied = scoreDiff === 0;
 
@@ -74,13 +84,13 @@ export default function MatchupPage() {
               </Link>
               <div>
                 <p className="text-[10px] text-muted-foreground">
-                  {matchup.leagueName}
+                  {matchup.leagueName || "League"}
                 </p>
                 <p className="text-xs font-medium">Round {matchup.round}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Link href={`/standings/${matchup.leagueId}`}>
+              <Link href={`/standings/${matchup.league_id}`}>
                 <Button variant="ghost" size="sm" className="h-7 px-2">
                   <BarChart3 className="h-3.5 w-3.5 mr-1" />
                   <span className="text-xs">Standings</span>
@@ -111,13 +121,13 @@ export default function MatchupPage() {
                       : "text-muted-foreground")
                 )}
               >
-                {matchup.homeTeam.totalPoints.toFixed(1)}
+                {matchup.homeTeam.total_points.toFixed(1)}
               </p>
               {matchup.status === "live" && (
                 <div className="flex items-center justify-center gap-1 mt-1">
                   <Circle className="h-1.5 w-1.5 fill-green-400 text-green-400 animate-pulse" />
                   <span className="text-[10px] text-green-400">
-                    {matchup.homeTeam.players.filter((p) => p.isPlaying).length}{" "}
+                    {matchup.homeTeam.players.filter((p) => p.is_playing).length}{" "}
                     playing
                   </span>
                 </div>
@@ -166,13 +176,13 @@ export default function MatchupPage() {
                       : "text-muted-foreground")
                 )}
               >
-                {matchup.awayTeam.totalPoints.toFixed(1)}
+                {matchup.awayTeam.total_points.toFixed(1)}
               </p>
               {matchup.status === "live" && (
                 <div className="flex items-center justify-center gap-1 mt-1">
                   <Circle className="h-1.5 w-1.5 fill-green-400 text-green-400 animate-pulse" />
                   <span className="text-[10px] text-green-400">
-                    {matchup.awayTeam.players.filter((p) => p.isPlaying).length}{" "}
+                    {matchup.awayTeam.players.filter((p) => p.is_playing).length}{" "}
                     playing
                   </span>
                 </div>
@@ -197,7 +207,7 @@ export default function MatchupPage() {
             <div>
               <span className="text-muted-foreground">Projected: </span>
               <span className="font-medium">
-                {matchup.homeTeam.projectedTotal}
+                {matchup.homeTeam.projected_total.toFixed(1)}
               </span>
             </div>
             <div className="text-center">
@@ -208,7 +218,7 @@ export default function MatchupPage() {
             <div className="text-right">
               <span className="text-muted-foreground">Projected: </span>
               <span className="font-medium">
-                {matchup.awayTeam.projectedTotal}
+                {matchup.awayTeam.projected_total.toFixed(1)}
               </span>
             </div>
           </div>

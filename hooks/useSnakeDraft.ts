@@ -1,12 +1,57 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import {
-  Player,
-  League,
-  DraftPick,
-  mockPlayers,
-  TOTAL_DRAFT_PICKS,
-  getPickInfo,
-} from '@/data/mockData';
+import { useAflPlayers } from '@/hooks/useAfl';
+import type { AflPlayer } from '@/types/database';
+
+const TOTAL_DRAFT_PICKS = 28;
+
+// Helper function to get pick info
+function getPickInfo(
+  pickNumber: number,
+  teamCount: number
+): { round: number; pickInRound: number; teamIndex: number } {
+  const round = Math.floor(pickNumber / teamCount);
+  const pickInRound = pickNumber % teamCount;
+  const isReversed = round % 2 === 1;
+  const teamIndex = isReversed ? teamCount - 1 - pickInRound : pickInRound;
+  return { round: round + 1, pickInRound: pickInRound + 1, teamIndex };
+}
+
+// Mock League type for useSnakeDraft (matches mockData structure)
+interface League {
+  id: string;
+  name: string;
+  commissioner: string;
+  members: LeagueMember[];
+  maxMembers: number;
+  entryFee: number;
+  prizePool: number;
+  draftStatus: 'waiting' | 'in-progress' | 'completed';
+  rosterConfig: {
+    onField: { DEF: number; MID: number; RUC: number; FWD: number };
+    emergencies: { DEF: number; MID: number; RUC: number; FWD: number };
+    bench: number;
+  };
+  pickTimeLimit: number;
+  draftOrder?: string[];
+  draftStartTime?: string;
+}
+
+interface LeagueMember {
+  userId: string;
+  username: string;
+  isCommissioner: boolean;
+  draftPosition?: number;
+  roster: AflPlayer[];
+}
+
+interface DraftPick {
+  pickNumber: number;
+  round: number;
+  userId: string;
+  username: string;
+  player: AflPlayer;
+  timestamp: string;
+}
 
 interface UseSnakeDraftProps {
   league: League;
@@ -22,15 +67,15 @@ interface UseSnakeDraftReturn {
   isMyTurn: boolean;
   timeRemaining: number;
   draftPicks: DraftPick[];
-  availablePlayers: Player[];
-  myRoster: Player[];
-  
+  availablePlayers: AflPlayer[];
+  myRoster: AflPlayer[];
+
   // Actions
   startDraft: () => void;
-  makePick: (player: Player) => boolean;
-  
+  makePick: (player: AflPlayer) => boolean;
+
   // Computed
-  getTeamRoster: (userId: string) => Player[];
+  getTeamRoster: (userId: string) => AflPlayer[];
   getPickHistory: () => DraftPick[];
   getTotalPicks: () => number;
   getCurrentDrafter: () => { userId: string; username: string } | null;
@@ -40,20 +85,28 @@ export function useSnakeDraft({
   league,
   currentUserId,
 }: UseSnakeDraftProps): UseSnakeDraftReturn {
+  const { data: allPlayers = [] } = useAflPlayers();
   const [draftStatus, setDraftStatus] = useState<'waiting' | 'in-progress' | 'completed'>(
     league.draftStatus
   );
   const [currentPick, setCurrentPick] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(league.pickTimeLimit);
   const [draftPicks, setDraftPicks] = useState<DraftPick[]>([]);
-  const [availablePlayers, setAvailablePlayers] = useState<Player[]>([...mockPlayers]);
-  const [teamRosters, setTeamRosters] = useState<Record<string, Player[]>>(() => {
-    const rosters: Record<string, Player[]> = {};
+  const [availablePlayers, setAvailablePlayers] = useState<AflPlayer[]>([]);
+  const [teamRosters, setTeamRosters] = useState<Record<string, AflPlayer[]>>(() => {
+    const rosters: Record<string, AflPlayer[]> = {};
     league.members.forEach((m) => {
       rosters[m.userId] = [];
     });
     return rosters;
   });
+
+  // Initialize available players when allPlayers loads
+  useEffect(() => {
+    if (allPlayers.length > 0 && availablePlayers.length === 0) {
+      setAvailablePlayers([...allPlayers]);
+    }
+  }, [allPlayers, availablePlayers.length]);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const teamCount = league.members.length;
@@ -100,12 +153,12 @@ export function useSnakeDraft({
   // Auto-pick highest projected player
   const handleAutoPick = useCallback(() => {
     if (availablePlayers.length === 0) return;
-    
+
     const sortedPlayers = [...availablePlayers].sort(
-      (a, b) => b.projectedPoints - a.projectedPoints
+      (a, b) => (b.avg_points || 0) - (a.avg_points || 0)
     );
     const autoPick = sortedPlayers[0];
-    
+
     if (autoPick) {
       makePickInternal(autoPick);
     }
@@ -113,7 +166,7 @@ export function useSnakeDraft({
 
   // Internal pick logic
   const makePickInternal = useCallback(
-    (player: Player) => {
+    (player: AflPlayer) => {
       const drafter = getCurrentDrafter();
       if (!drafter) return false;
 
@@ -148,7 +201,7 @@ export function useSnakeDraft({
 
   // Public pick function (only works if it's user's turn)
   const makePick = useCallback(
-    (player: Player): boolean => {
+    (player: AflPlayer): boolean => {
       if (!isMyTurn) return false;
       if (!availablePlayers.find((p) => p.id === player.id)) return false;
       return makePickInternal(player);
@@ -165,7 +218,7 @@ export function useSnakeDraft({
 
   // Get team roster
   const getTeamRoster = useCallback(
-    (userId: string): Player[] => {
+    (userId: string): AflPlayer[] => {
       return teamRosters[userId] || [];
     },
     [teamRosters]

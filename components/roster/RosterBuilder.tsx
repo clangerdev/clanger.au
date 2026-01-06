@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Contest, DAILY_ROSTER_CONFIG, DAILY_SALARY_CAP, AFLPosition } from '@/data/mockData';
+import { useAflPlayers } from '@/hooks/useAfl';
+import type { Contest, AflPosition } from '@/types/database';
+
+const DAILY_ROSTER_CONFIG: Record<AflPosition, number> = {
+  DEF: 2,
+  MID: 3,
+  RUC: 1,
+  FWD: 2,
+};
+const DAILY_SALARY_CAP = 100000;
 import { useRosterBuilder } from '@/hooks/useRosterBuilder';
 import { PlayerPool } from './PlayerPool';
 import { SelectedRoster } from './SelectedRoster';
@@ -24,8 +33,16 @@ export function RosterBuilder({ contest }: RosterBuilderProps) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'players' | 'roster'>('players');
 
-  const rosterConfig = contest.rosterConfig || DAILY_ROSTER_CONFIG;
-  const salaryCap = contest.salaryCap || DAILY_SALARY_CAP;
+  const rosterConfig: Record<AflPosition, number> = {
+    DEF: contest.roster_config_def ?? DAILY_ROSTER_CONFIG.DEF,
+    MID: contest.roster_config_mid ?? DAILY_ROSTER_CONFIG.MID,
+    RUC: contest.roster_config_ruc ?? DAILY_ROSTER_CONFIG.RUC,
+    FWD: contest.roster_config_fwd ?? DAILY_ROSTER_CONFIG.FWD,
+  };
+  const salaryCap = contest.salary_cap ?? DAILY_SALARY_CAP;
+
+  // Fetch players data
+  const { data: players = [], isLoading: playersLoading } = useAflPlayers();
 
   const {
     roster,
@@ -49,7 +66,7 @@ export function RosterBuilder({ contest }: RosterBuilderProps) {
       }
       return acc;
     },
-    { DEF: 0, MID: 0, RUC: 0, FWD: 0 } as Record<AFLPosition, number>
+    { DEF: 0, MID: 0, RUC: 0, FWD: 0 } as Record<AflPosition, number>
   );
 
   const handleAddPlayer = (player: (typeof roster)[0]['player']) => {
@@ -123,12 +140,19 @@ export function RosterBuilder({ contest }: RosterBuilderProps) {
           </TabsList>
 
           <TabsContent value="players" className="flex-1 mt-0 overflow-hidden">
-            <PlayerPool
-              selectedPlayerIds={selectedPlayerIds}
-              canAddPlayer={canAddPlayer}
-              onAddPlayer={handleAddPlayer}
-              remainingBudget={remainingBudget}
-            />
+            {playersLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground">Loading players...</p>
+              </div>
+            ) : (
+              <PlayerPool
+                players={players}
+                selectedPlayerIds={selectedPlayerIds}
+                canAddPlayer={canAddPlayer}
+                onAddPlayer={handleAddPlayer}
+                remainingBudget={remainingBudget}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="roster" className="flex-1 mt-0 overflow-auto">
@@ -199,12 +223,19 @@ export function RosterBuilder({ contest }: RosterBuilderProps) {
           <Users className="h-5 w-5 text-primary" />
           Player Pool
         </h2>
-        <PlayerPool
-          selectedPlayerIds={selectedPlayerIds}
-          canAddPlayer={canAddPlayer}
-          onAddPlayer={handleAddPlayer}
-          remainingBudget={remainingBudget}
-        />
+        {playersLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-muted-foreground">Loading players...</p>
+          </div>
+        ) : (
+          <PlayerPool
+            players={players}
+            selectedPlayerIds={selectedPlayerIds}
+            canAddPlayer={canAddPlayer}
+            onAddPlayer={handleAddPlayer}
+            remainingBudget={remainingBudget}
+          />
+        )}
       </div>
 
       {/* Selected Roster - Right Side */}

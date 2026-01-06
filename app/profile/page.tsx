@@ -16,16 +16,7 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { formatCurrency } from "@/lib/utils";
-
-type UserProfile = {
-  id: string;
-  username: string;
-  avatar_url: string | null;
-  role: string;
-  email: string | null;
-  first_name: string | null;
-  last_name: string | null;
-};
+import type { UserProfile } from "@/types/profile";
 
 export default function ProfilePage() {
   const { user: authUser, loading: authLoading } = useAuth();
@@ -55,7 +46,7 @@ export default function ProfilePage() {
       if (error) throw error;
 
       if (data) {
-        setProfile(data);
+        setProfile(data as UserProfile);
       }
     } catch (err) {
       console.error("Failed to load profile:", err);

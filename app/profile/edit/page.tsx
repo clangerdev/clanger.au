@@ -9,27 +9,7 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { formatCurrency } from "@/lib/utils";
-
-type UserProfile = {
-  id: string;
-  username: string;
-  avatar_url: string | null;
-  role: string;
-  email: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  mobile: string | null;
-  dob: string | null;
-  kyc_verified: boolean;
-  created_at: string;
-  last_signed_in: string | null;
-  total_time_on_site: number;
-  number_of_sessions: number;
-  time_of_last_entry_into_contest: string | null;
-  number_of_contests_entered: number;
-  number_of_contests_won: number;
-  total_amount_spent: number;
-};
+import type { UserProfile } from "@/types/profile";
 
 // Format date to readable string
 function formatDate(dateString: string | null): string {

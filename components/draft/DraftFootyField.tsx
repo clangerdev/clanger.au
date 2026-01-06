@@ -1,22 +1,28 @@
-import { Player, AFLPosition, SeasonLongRosterConfig } from '@/data/mockData';
 import { cn } from '@/lib/utils';
 import { User } from 'lucide-react';
+import type { AflPlayer, AflPosition } from '@/types/database';
+
+interface SeasonLongRosterConfig {
+  onField: { DEF: number; MID: number; RUC: number; FWD: number };
+  emergencies: { DEF: number; MID: number; RUC: number; FWD: number };
+  bench: number;
+}
 
 interface DraftFootyFieldProps {
-  roster: Player[];
+  roster: AflPlayer[];
   rosterConfig: SeasonLongRosterConfig;
 }
 
 export function DraftFootyField({ roster, rosterConfig }: DraftFootyFieldProps) {
-  const positions: AFLPosition[] = ['DEF', 'MID', 'RUC', 'FWD'];
+  const positions: AflPosition[] = ['DEF', 'MID', 'RUC', 'FWD'];
 
-  const getPlayersByPosition = (pos: AFLPosition) =>
+  const getPlayersByPosition = (pos: AflPosition) =>
     roster.filter((p) => p.position === pos);
 
-  const getRequiredCount = (pos: AFLPosition) =>
+  const getRequiredCount = (pos: AflPosition) =>
     rosterConfig.onField[pos] + rosterConfig.emergencies[pos];
 
-  const positionConfig: Record<AFLPosition, { label: string; color: string; bgColor: string }> = {
+  const positionConfig: Record<AflPosition, { label: string; color: string; bgColor: string }> = {
     DEF: { label: 'Defenders', color: 'text-blue-400', bgColor: 'bg-blue-500/20 border-blue-500/30' },
     MID: { label: 'Midfielders', color: 'text-green-400', bgColor: 'bg-green-500/20 border-green-500/30' },
     RUC: { label: 'Ruckmen', color: 'text-purple-400', bgColor: 'bg-purple-500/20 border-purple-500/30' },
@@ -32,11 +38,11 @@ export function DraftFootyField({ roster, rosterConfig }: DraftFootyFieldProps) 
           {/* Center circle */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full border-2 border-emerald-600/30" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-emerald-600/40" />
-          
+
           {/* 50m arcs */}
           <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-[80%] h-16 border-b-2 border-emerald-600/20 rounded-b-full" />
           <div className="absolute bottom-[15%] left-1/2 -translate-x-1/2 w-[80%] h-16 border-t-2 border-emerald-600/20 rounded-t-full" />
-          
+
           {/* Goal squares */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-6 border-2 border-t-0 border-emerald-600/30" />
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-6 border-2 border-b-0 border-emerald-600/30" />
@@ -74,7 +80,9 @@ export function DraftFootyField({ roster, rosterConfig }: DraftFootyFieldProps) 
                       <span className="text-[9px] font-medium text-foreground max-w-[60px] truncate text-center">
                         {player.name.split(' ').pop()}
                       </span>
-                      <span className="text-[8px] text-muted-foreground">{player.team}</span>
+                      <span className="text-[8px] text-muted-foreground">
+                        {player.team_id}
+                      </span>
                     </div>
                   ))}
 

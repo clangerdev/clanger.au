@@ -2,10 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { signUpWithEmailPassword } from "@/services/auth";
-
-export type SignupActionState = {
-  error?: string;
-};
+import type { SignupActionState } from "@/types/auth";
+export type { SignupActionState } from "@/types/auth";
 
 export async function signupAction(
   _prevState: SignupActionState,

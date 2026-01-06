@@ -1,14 +1,30 @@
-import { MatchupPlayer, AFLPosition } from '@/data/mockData';
+import type { AflPosition } from '@/types/database';
 import { cn } from '@/lib/utils';
 import { Circle } from 'lucide-react';
 
+interface MatchupPlayerData {
+  id: string;
+  matchup_team_id: string;
+  player_id: string;
+  live_points: number;
+  is_playing: boolean;
+  game_status: 'upcoming' | 'live' | 'completed';
+  player: {
+    id: string;
+    name: string;
+    position: AflPosition;
+    salary: number;
+    avg_points: number | null;
+  };
+}
+
 interface MatchupPlayerRowProps {
-  player: MatchupPlayer;
+  player: MatchupPlayerData;
   isHome: boolean;
 }
 
 export function MatchupPlayerRow({ player, isHome }: MatchupPlayerRowProps) {
-  const positionColors: Record<AFLPosition, string> = {
+  const positionColors: Record<AflPosition, string> = {
     DEF: 'bg-blue-500/30 text-blue-300',
     MID: 'bg-green-500/30 text-green-300',
     RUC: 'bg-purple-500/30 text-purple-300',
@@ -25,7 +41,7 @@ export function MatchupPlayerRow({ player, isHome }: MatchupPlayerRowProps) {
     <div
       className={cn(
         'flex items-center gap-2 p-2 rounded-lg',
-        player.isPlaying && 'bg-green-500/10',
+        player.is_playing && 'bg-green-500/10',
         isHome ? 'flex-row' : 'flex-row-reverse'
       )}
     >
@@ -33,24 +49,23 @@ export function MatchupPlayerRow({ player, isHome }: MatchupPlayerRowProps) {
       <div
         className={cn(
           'w-8 h-8 rounded flex items-center justify-center text-[10px] font-bold flex-shrink-0',
-          positionColors[player.position]
+          positionColors[player.player.position]
         )}
       >
-        {player.position}
+        {player.player.position}
       </div>
 
       {/* Player Info */}
       <div className={cn('flex-1 min-w-0', !isHome && 'text-right')}>
         <div className="flex items-center gap-1.5" style={{ justifyContent: isHome ? 'flex-start' : 'flex-end' }}>
-          {player.isPlaying && (
+          {player.is_playing && (
             <Circle className="h-2 w-2 fill-green-400 text-green-400 animate-pulse" />
           )}
-          <span className="font-medium text-sm truncate">{player.name}</span>
+          <span className="font-medium text-sm truncate">{player.player.name}</span>
         </div>
         <div className={cn('flex items-center gap-1 text-[10px]', !isHome && 'justify-end')}>
-          <span className="text-muted-foreground">{player.team}</span>
-          <span className={statusColors[player.gameStatus]}>
-            {player.gameStatus === 'live' ? '• LIVE' : player.gameStatus === 'completed' ? '• FT' : ''}
+          <span className={statusColors[player.game_status]}>
+            {player.game_status === 'live' ? '• LIVE' : player.game_status === 'completed' ? '• FT' : ''}
           </span>
         </div>
       </div>
@@ -59,13 +74,13 @@ export function MatchupPlayerRow({ player, isHome }: MatchupPlayerRowProps) {
       <div className={cn('text-right flex-shrink-0', !isHome && 'text-left')}>
         <p className={cn(
           'font-bold text-sm',
-          player.gameStatus === 'live' && 'text-green-400',
-          player.gameStatus === 'upcoming' && 'text-muted-foreground'
+          player.game_status === 'live' && 'text-green-400',
+          player.game_status === 'upcoming' && 'text-muted-foreground'
         )}>
-          {player.livePoints > 0 ? player.livePoints.toFixed(1) : '-'}
+          {player.live_points > 0 ? player.live_points.toFixed(1) : '-'}
         </p>
         <p className="text-[10px] text-muted-foreground">
-          proj {player.projectedPoints.toFixed(0)}
+          proj {player.player.avg_points?.toFixed(0) || '0'}
         </p>
       </div>
     </div>

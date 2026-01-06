@@ -12,25 +12,47 @@ import { DraftBoard } from "@/components/draft/DraftBoard";
 import { DraftBottomDrawer } from "@/components/draft/DraftBottomDrawer";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { cn } from "@/lib/utils";
-import {
-  getLeagueById,
-  formatCurrency,
-  mockUser,
-  SEASON_LONG_ROSTER_CONFIG,
-  DEFAULT_PICK_TIME,
-  type League,
-} from "@/data/mockData";
+import { formatCurrency } from "@/lib/utils";
+import { useLeague, useLeagueMembers } from "@/hooks/useLeagues";
+import { useAuth } from "@/components/auth/AuthProvider";
+
+// Local type matching the league shape expected by useSnakeDraft
+type SnakeDraftLeague = {
+  id: string;
+  name: string;
+  commissioner: string;
+  members: {
+    userId: string;
+    username: string;
+    isCommissioner: boolean;
+    draftPosition?: number;
+    roster: never[];
+  }[];
+  maxMembers: number;
+  entryFee: number;
+  prizePool: number;
+  draftStatus: "waiting" | "in-progress" | "completed";
+  rosterConfig: {
+    onField: { DEF: number; MID: number; RUC: number; FWD: number };
+    emergencies: { DEF: number; MID: number; RUC: number; FWD: number };
+    bench: number;
+  };
+  pickTimeLimit: number;
+  draftOrder?: string[];
+  draftStartTime?: string;
+};
 
 export default function DraftPage() {
   const params = useParams();
   const id = params?.id as string;
   const router = useRouter();
   const { toast } = useToast();
-  const league = getLeagueById(id || "");
-  const currentUserId = mockUser.id;
+  const { user } = useAuth();
+  const { data: league, isLoading: leagueLoading } = useLeague(id || "");
+  const { data: members = [] } = useLeagueMembers(id || "");
 
   // Create a minimal dummy league to satisfy React hooks rules (always call hooks)
-  const dummyLeague: League = {
+  const dummyLeague: SnakeDraftLeague = {
     id: "",
     name: "",
     commissioner: "",
@@ -39,12 +61,79 @@ export default function DraftPage() {
     entryFee: 0,
     prizePool: 0,
     draftStatus: "waiting",
-    rosterConfig: SEASON_LONG_ROSTER_CONFIG,
-    pickTimeLimit: DEFAULT_PICK_TIME,
+    rosterConfig: {
+      onField: {
+        DEF: 5,
+        MID: 7,
+        RUC: 1,
+        FWD: 5,
+      },
+      emergencies: {
+        DEF: 1,
+        MID: 1,
+        RUC: 1,
+        FWD: 1,
+      },
+      bench: 6,
+    },
+    pickTimeLimit: 90,
+    draftOrder: undefined,
+    draftStartTime: undefined,
   };
 
+  // Transform league data for useSnakeDraft hook
+  const transformedLeague: SnakeDraftLeague = league
+    ? {
+        id: league.id,
+        name: league.name,
+        commissioner: league.commissioner_id,
+        members: members.map((m) => ({
+          userId: m.user_id,
+          username: "", // TODO: Get from users table
+          isCommissioner: m.is_commissioner,
+          draftPosition: m.draft_position || undefined,
+          roster: [],
+        })),
+        maxMembers: league.max_members,
+        entryFee: league.entry_fee,
+        prizePool: league.prize_pool,
+        draftStatus: league.draft_status,
+        rosterConfig: {
+          onField: {
+            DEF: league.roster_config_onfield_def,
+            MID: league.roster_config_onfield_mid,
+            RUC: league.roster_config_onfield_ruc,
+            FWD: league.roster_config_onfield_fwd,
+          },
+          emergencies: {
+            DEF: league.roster_config_emergencies_def,
+            MID: league.roster_config_emergencies_mid,
+            RUC: league.roster_config_emergencies_ruc,
+            FWD: league.roster_config_emergencies_fwd,
+          },
+          bench: league.roster_config_bench,
+        },
+        pickTimeLimit: league.pick_time_limit,
+        draftOrder: league.draft_order || undefined,
+        draftStartTime: league.draft_start_time || undefined,
+      }
+    : dummyLeague;
+
   // Always call the hook unconditionally to satisfy React rules
-  const draft = useSnakeDraft({ league: league || dummyLeague, currentUserId });
+  const draft = useSnakeDraft({
+    league: transformedLeague,
+    currentUserId: user?.id || "",
+  });
+
+  if (leagueLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <p className="text-muted-foreground">Loading league...</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (!league || !draft) {
     return (
@@ -111,37 +200,37 @@ export default function DraftPage() {
               <div>
                 <p className="text-xs text-muted-foreground">Prize Pool</p>
                 <p className="text-2xl font-bold text-primary">
-                  {formatCurrency(league.prizePool)}
+                  {formatCurrency(league.prize_pool)}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Entry Fee</p>
                 <p className="text-2xl font-bold">
-                  {formatCurrency(league.entryFee)}
+                  {formatCurrency(league.entry_fee)}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Members</p>
                 <p className="text-2xl font-bold">
-                  {league.members.length}/{league.maxMembers}
+                  {members.length}/{league.max_members}
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6 max-w-2xl mx-auto">
-              {league.members.map((member) => (
+              {members.map((member) => (
                 <div
-                  key={member.userId}
+                  key={member.id}
                   className="p-3 rounded-lg bg-muted/50 border border-border"
                 >
                   <p className="font-medium text-sm">
-                    {member.username}
-                    {member.userId === currentUserId && (
+                    User {member.user_id.slice(0, 8)}
+                    {member.user_id === user?.id && (
                       <span className="text-primary ml-1">(You)</span>
                     )}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Pick #{member.draftPosition}
+                    Pick #{member.draft_position || "TBD"}
                   </p>
                 </div>
               ))}
@@ -204,7 +293,7 @@ export default function DraftPage() {
             <DraftTimer
               timeRemaining={draft.timeRemaining}
               isMyTurn={draft.isMyTurn}
-              pickTimeLimit={league.pickTimeLimit}
+              pickTimeLimit={league.pick_time_limit}
             />
             <Badge
               variant="outline"
@@ -223,17 +312,17 @@ export default function DraftPage() {
         {/* Main Content - Draft Board */}
         <div className="flex-1 overflow-hidden">
           <DraftBoard
-            members={league.members}
+            members={transformedLeague.members}
             draftPicks={draft.draftPicks}
             currentPick={draft.currentPick}
-            currentUserId={currentUserId}
+            currentUserId={user?.id || ""}
           />
         </div>
 
         {/* Bottom Drawer - My Roster / Available Players */}
         <DraftBottomDrawer
           roster={draft.myRoster}
-          rosterConfig={league.rosterConfig}
+          rosterConfig={transformedLeague.rosterConfig}
           availablePlayers={draft.availablePlayers}
           isMyTurn={draft.isMyTurn}
           onSelectPlayer={handleSelectPlayer}
