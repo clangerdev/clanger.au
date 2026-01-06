@@ -13,9 +13,34 @@ import { DraftBottomDrawer } from "@/components/draft/DraftBottomDrawer";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils";
-import { useLeague, useLeagueMembers, useDraftPicks } from "@/hooks/useLeagues";
+import { useLeague, useLeagueMembers } from "@/hooks/useLeagues";
 import { useAuth } from "@/components/auth/AuthProvider";
-import type { League } from "@/types/database";
+
+// Local type matching the league shape expected by useSnakeDraft
+type SnakeDraftLeague = {
+  id: string;
+  name: string;
+  commissioner: string;
+  members: {
+    userId: string;
+    username: string;
+    isCommissioner: boolean;
+    draftPosition?: number;
+    roster: never[];
+  }[];
+  maxMembers: number;
+  entryFee: number;
+  prizePool: number;
+  draftStatus: "waiting" | "in-progress" | "completed";
+  rosterConfig: {
+    onField: { DEF: number; MID: number; RUC: number; FWD: number };
+    emergencies: { DEF: number; MID: number; RUC: number; FWD: number };
+    bench: number;
+  };
+  pickTimeLimit: number;
+  draftOrder?: string[];
+  draftStartTime?: string;
+};
 
 export default function DraftPage() {
   const params = useParams();
@@ -25,71 +50,80 @@ export default function DraftPage() {
   const { user } = useAuth();
   const { data: league, isLoading: leagueLoading } = useLeague(id || "");
   const { data: members = [] } = useLeagueMembers(id || "");
-  const { data: draftPicks = [] } = useDraftPicks(id || "");
 
   // Create a minimal dummy league to satisfy React hooks rules (always call hooks)
-  const dummyLeague: League = {
+  const dummyLeague: SnakeDraftLeague = {
     id: "",
     name: "",
-    commissioner_id: "",
-    max_members: 0,
-    entry_fee: 0,
-    prize_pool: 0,
-    draft_status: "waiting",
-    roster_config_onfield_def: 5,
-    roster_config_onfield_mid: 7,
-    roster_config_onfield_ruc: 1,
-    roster_config_onfield_fwd: 5,
-    roster_config_emergencies_def: 1,
-    roster_config_emergencies_mid: 1,
-    roster_config_emergencies_ruc: 1,
-    roster_config_emergencies_fwd: 1,
-    roster_config_bench: 6,
-    pick_time_limit: 90,
-    draft_order: null,
-    draft_start_time: null,
-    created_at: "",
-    updated_at: "",
+    commissioner: "",
+    members: [],
+    maxMembers: 0,
+    entryFee: 0,
+    prizePool: 0,
+    draftStatus: "waiting",
+    rosterConfig: {
+      onField: {
+        DEF: 5,
+        MID: 7,
+        RUC: 1,
+        FWD: 5,
+      },
+      emergencies: {
+        DEF: 1,
+        MID: 1,
+        RUC: 1,
+        FWD: 1,
+      },
+      bench: 6,
+    },
+    pickTimeLimit: 90,
+    draftOrder: undefined,
+    draftStartTime: undefined,
   };
 
   // Transform league data for useSnakeDraft hook
-  const transformedLeague = league ? {
-    id: league.id,
-    name: league.name,
-    commissioner: league.commissioner_id,
-    members: members.map(m => ({
-      userId: m.user_id,
-      username: "", // TODO: Get from users table
-      isCommissioner: m.is_commissioner,
-      draftPosition: m.draft_position || undefined,
-      roster: [],
-    })),
-    maxMembers: league.max_members,
-    entryFee: league.entry_fee,
-    prizePool: league.prize_pool,
-    draftStatus: league.draft_status,
-    rosterConfig: {
-      onField: {
-        DEF: league.roster_config_onfield_def,
-        MID: league.roster_config_onfield_mid,
-        RUC: league.roster_config_onfield_ruc,
-        FWD: league.roster_config_onfield_fwd,
-      },
-      emergencies: {
-        DEF: league.roster_config_emergencies_def,
-        MID: league.roster_config_emergencies_mid,
-        RUC: league.roster_config_emergencies_ruc,
-        FWD: league.roster_config_emergencies_fwd,
-      },
-      bench: league.roster_config_bench,
-    },
-    pickTimeLimit: league.pick_time_limit,
-    draftOrder: league.draft_order || undefined,
-    draftStartTime: league.draft_start_time || undefined,
-  } : dummyLeague;
+  const transformedLeague: SnakeDraftLeague = league
+    ? {
+        id: league.id,
+        name: league.name,
+        commissioner: league.commissioner_id,
+        members: members.map((m) => ({
+          userId: m.user_id,
+          username: "", // TODO: Get from users table
+          isCommissioner: m.is_commissioner,
+          draftPosition: m.draft_position || undefined,
+          roster: [],
+        })),
+        maxMembers: league.max_members,
+        entryFee: league.entry_fee,
+        prizePool: league.prize_pool,
+        draftStatus: league.draft_status,
+        rosterConfig: {
+          onField: {
+            DEF: league.roster_config_onfield_def,
+            MID: league.roster_config_onfield_mid,
+            RUC: league.roster_config_onfield_ruc,
+            FWD: league.roster_config_onfield_fwd,
+          },
+          emergencies: {
+            DEF: league.roster_config_emergencies_def,
+            MID: league.roster_config_emergencies_mid,
+            RUC: league.roster_config_emergencies_ruc,
+            FWD: league.roster_config_emergencies_fwd,
+          },
+          bench: league.roster_config_bench,
+        },
+        pickTimeLimit: league.pick_time_limit,
+        draftOrder: league.draft_order || undefined,
+        draftStartTime: league.draft_start_time || undefined,
+      }
+    : dummyLeague;
 
   // Always call the hook unconditionally to satisfy React rules
-  const draft = useSnakeDraft({ league: transformedLeague, currentUserId: user?.id || "" });
+  const draft = useSnakeDraft({
+    league: transformedLeague,
+    currentUserId: user?.id || "",
+  });
 
   if (leagueLoading) {
     return (

@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 import { useContest } from "@/hooks/useContests";
 import { useContestEntriesByUser } from "@/hooks/useContests";
-import { useTeamRoster } from "@/hooks/useUserTeams";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function LivePage() {
@@ -46,16 +45,6 @@ export default function LivePage() {
       </AppLayout>
     );
   }
-
-  // Mock live player data with scores
-  const livePlayers = mockPlayers
-    .filter((p) => p.sport === entry.sport)
-    .slice(0, 5)
-    .map((p, i) => ({
-      ...p,
-      actualPoints: Math.random() * 30 + 5,
-      isPlaying: i < 2,
-    }));
 
   return (
     <AppLayout>

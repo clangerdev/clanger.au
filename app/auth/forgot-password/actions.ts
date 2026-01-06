@@ -1,11 +1,8 @@
 "use server";
 
 import { resetPassword } from "@/services/auth";
-
-export type ForgotPasswordActionState = {
-  error?: string;
-  success?: boolean;
-};
+import type { ForgotPasswordActionState } from "@/types/auth";
+export type { ForgotPasswordActionState } from "@/types/auth";
 
 export async function forgotPasswordAction(
   _prevState: ForgotPasswordActionState,

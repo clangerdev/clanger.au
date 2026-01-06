@@ -17,7 +17,7 @@ import { useUserTeams } from "@/hooks/useUserTeams";
 import { useContestEntriesByUser, useContestsByIds } from "@/hooks/useContests";
 import { useLeagues } from "@/hooks/useLeagues";
 import { useAuth } from "@/components/auth/AuthProvider";
-import type { ContestEntry, MatchupWithDetails } from "@/types/database";
+import type { EntryCardData, MatchupWithDetails } from "@/types/my-contests";
 
 function EntryCard({ entry }: { entry: EntryCardData }) {
   const statusConfig = {
@@ -98,7 +98,13 @@ function EntryCard({ entry }: { entry: EntryCardData }) {
   );
 }
 
-function MatchupCard({ matchup, currentUserId }: { matchup: MatchupWithDetails; currentUserId?: string }) {
+function MatchupCard({
+  matchup,
+  currentUserId,
+}: {
+  matchup: MatchupWithDetails;
+  currentUserId?: string;
+}) {
   const isUserHome = matchup.homeTeam.user_id === currentUserId;
   const userTeam = isUserHome ? matchup.homeTeam : matchup.awayTeam;
   const opponentTeam = isUserHome ? matchup.awayTeam : matchup.homeTeam;
@@ -187,18 +193,19 @@ function MatchupCard({ matchup, currentUserId }: { matchup: MatchupWithDetails; 
 
 export default function MyContestsPage() {
   const { user } = useAuth();
-  const { data: contestEntries = [], isLoading: entriesLoading } = useContestEntriesByUser(user?.id || "");
+  const { data: contestEntries = [], isLoading: entriesLoading } =
+    useContestEntriesByUser(user?.id || "");
   const { data: allLeagues = [] } = useLeagues();
 
   // Get unique contest IDs from entries
-  const contestIds = [...new Set(contestEntries.map(e => e.contest_id))];
+  const contestIds = [...new Set(contestEntries.map((e) => e.contest_id))];
 
   // Fetch contest details in batch
   const { data: contests = [] } = useContestsByIds(contestIds);
 
   // Transform contest entries to entry cards with contest data
-  const entries: EntryCardData[] = contestEntries.map(entry => {
-    const contest = contests.find(c => c.id === entry.contest_id);
+  const entries: EntryCardData[] = contestEntries.map((entry) => {
+    const contest = contests.find((c) => c.id === entry.contest_id);
     return {
       id: entry.id,
       contest_id: entry.contest_id,
@@ -215,8 +222,8 @@ export default function MyContestsPage() {
 
   // Get user's leagues (from teams that have league_id)
   const { data: userTeams = [] } = useUserTeams(user?.id || "");
-  const userLeagues = allLeagues.filter(l =>
-    userTeams.some(ut => ut.league_id === l.id)
+  const userLeagues = allLeagues.filter((l) =>
+    userTeams.some((ut) => ut.contest_id === l.id)
   );
 
   const liveEntries = entries.filter((e) => e.status === "live");
@@ -276,7 +283,11 @@ export default function MyContestsPage() {
             {(liveMatchups.length > 0 || upcomingMatchups.length > 0) && (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {[...liveMatchups, ...upcomingMatchups].map((matchup) => (
-                  <MatchupCard key={matchup.id} matchup={matchup} currentUserId={user?.id} />
+                  <MatchupCard
+                    key={matchup.id}
+                    matchup={matchup}
+                    currentUserId={user?.id}
+                  />
                 ))}
               </div>
             )}

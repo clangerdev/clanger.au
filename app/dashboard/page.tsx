@@ -12,7 +12,7 @@ import { formatCurrency } from "@/lib/utils";
 import { useContests } from "@/hooks/useContests";
 import { useUserTeams } from "@/hooks/useUserTeams";
 import { useWallet } from "@/hooks/useWallet";
-import { useContestEntries } from "@/hooks/useContests";
+// import { useContestEntries } from "@/hooks/useContests";
 
 function StatCard({
   icon: Icon,
@@ -74,11 +74,11 @@ export default function DashboardPage() {
   // Use profile username if available, otherwise fallback to email or "there"
   const displayName = profile?.username || user.email?.split("@")[0] || "there";
 
-  // Calculate stats from profile if available
+  // Calculate stats (currently limited data on profile)
   const balance = wallet?.balance || 0;
-  const totalWinnings = profile?.total_amount_spent ? 0 : 0; // TODO: Calculate from transactions
-  const contestsEntered = profile?.number_of_contests_entered || 0;
-  const contestsWon = profile?.number_of_contests_won || 0;
+  const totalWinnings = 0; // TODO: Calculate from transactions when available
+  const contestsEntered = 0; // TODO: Derive from entries once available
+  const contestsWon = 0; // TODO: Derive from results once available
 
   return (
     <AppLayout>

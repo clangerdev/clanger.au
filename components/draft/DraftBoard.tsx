@@ -155,7 +155,7 @@ export function DraftBoard({
                               {pick.player.name.split(' ').pop()}
                             </p>
                             <span className="text-[8px] font-bold opacity-80 truncate">
-                              {pick.player.position} • {pick.player.team}
+                              {pick.player.position} • {pick.player.team_id}
                             </span>
                           </div>
                         ) : isCurrentSlot ? (

@@ -80,7 +80,9 @@ export function DraftFootyField({ roster, rosterConfig }: DraftFootyFieldProps) 
                       <span className="text-[9px] font-medium text-foreground max-w-[60px] truncate text-center">
                         {player.name.split(' ').pop()}
                       </span>
-                      <span className="text-[8px] text-muted-foreground">{player.team}</span>
+                      <span className="text-[8px] text-muted-foreground">
+                        {player.team_id}
+                      </span>
                     </div>
                   ))}
 

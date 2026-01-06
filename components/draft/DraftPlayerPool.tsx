@@ -33,7 +33,7 @@ export function DraftPlayerPool({
       players = players.filter(
         (p) =>
           p.name.toLowerCase().includes(searchLower) ||
-          p.team.toLowerCase().includes(searchLower)
+          p.team_id.toLowerCase().includes(searchLower)
       );
     }
 
@@ -58,7 +58,7 @@ export function DraftPlayerPool({
     }
   };
 
-  const positionColors: Record<AFLPosition, string> = {
+  const positionColors: Record<AflPosition, string> = {
     DEF: 'bg-blue-500/30 text-blue-300',
     MID: 'bg-green-500/30 text-green-300',
     RUC: 'bg-purple-500/30 text-purple-300',
@@ -127,14 +127,18 @@ export function DraftPlayerPool({
                 <div
                   className={cn(
                     'w-6 h-6 rounded flex items-center justify-center text-[9px] font-bold',
-                    positionColors[player.position as AFLPosition]
+                    positionColors[player.position]
                   )}
                 >
                   {player.position}
                 </div>
                 <div>
-                  <p className="font-medium text-[11px] leading-tight">{player.name}</p>
-                  <p className="text-[9px] text-muted-foreground">{player.team}</p>
+                  <p className="font-medium text-[11px] leading-tight">
+                    {player.name}
+                  </p>
+                  <p className="text-[9px] text-muted-foreground">
+                    {player.team_id}
+                  </p>
                 </div>
               </div>
               <span className="font-bold text-primary text-[10px]">

@@ -3,7 +3,12 @@ import { useRouter } from 'next/navigation';
 import { useAflPlayers } from '@/hooks/useAfl';
 import type { Contest, AflPosition } from '@/types/database';
 
-const DAILY_ROSTER_CONFIG = { DEF: 2, MID: 3, RUC: 1, FWD: 2 };
+const DAILY_ROSTER_CONFIG: Record<AflPosition, number> = {
+  DEF: 2,
+  MID: 3,
+  RUC: 1,
+  FWD: 2,
+};
 const DAILY_SALARY_CAP = 100000;
 import { useRosterBuilder } from '@/hooks/useRosterBuilder';
 import { PlayerPool } from './PlayerPool';
@@ -28,8 +33,13 @@ export function RosterBuilder({ contest }: RosterBuilderProps) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'players' | 'roster'>('players');
 
-  const rosterConfig = contest.rosterConfig || DAILY_ROSTER_CONFIG;
-  const salaryCap = contest.salaryCap || DAILY_SALARY_CAP;
+  const rosterConfig: Record<AflPosition, number> = {
+    DEF: contest.roster_config_def ?? DAILY_ROSTER_CONFIG.DEF,
+    MID: contest.roster_config_mid ?? DAILY_ROSTER_CONFIG.MID,
+    RUC: contest.roster_config_ruc ?? DAILY_ROSTER_CONFIG.RUC,
+    FWD: contest.roster_config_fwd ?? DAILY_ROSTER_CONFIG.FWD,
+  };
+  const salaryCap = contest.salary_cap ?? DAILY_SALARY_CAP;
 
   // Fetch players data
   const { data: players = [], isLoading: playersLoading } = useAflPlayers();

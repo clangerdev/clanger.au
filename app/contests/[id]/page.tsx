@@ -72,7 +72,9 @@ export default function ContestPage() {
                       : "bg-green-500/20 text-green-400 border-green-500/30"
                   }
                 >
-                  {contest.status === "live" && <Zap className="h-3 w-3 mr-1" />}
+                  {contest.status === "live" && (
+                    <Zap className="h-3 w-3 mr-1" />
+                  )}
                   {contest.status.charAt(0).toUpperCase() +
                     contest.status.slice(1)}
                 </Badge>
@@ -109,9 +111,7 @@ export default function ContestPage() {
           <div className="flex items-center gap-6 mt-4 pt-4 border-t border-border text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <Users className="h-4 w-4" />
-              <span>
-                {formatNumber(contest.max_entries)} max entries
-              </span>
+              <span>{formatNumber(contest.max_entries)} max entries</span>
             </div>
             <div className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
@@ -122,7 +122,7 @@ export default function ContestPage() {
 
         {/* Roster Builder for Daily Contests */}
         {isDailyContest ? (
-          <RosterBuilder contest={contest as any} />
+          <RosterBuilder contest={contest} />
         ) : (
           <div className="text-center py-12 bg-card rounded-xl border border-border">
             <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -136,4 +136,3 @@ export default function ContestPage() {
     </AppLayout>
   );
 }
-
